@@ -3,7 +3,8 @@ from collections import defaultdict
 import json
 from typing import Literal
 from openai import OpenAI
-from utils import CS
+
+from .utils import CS
 
 class ChatMemory:
 
@@ -37,7 +38,7 @@ class ChatMemory:
                     else:
                         lines.append(CS.purple(f"[assistant] > {cut(msg['content'])}"))
                 case 'tool':
-                    lines.append(CS.green(f"[tool] > {cut(msg['content'])}"))
+                    lines.append(CS.green(f"[tool] > {msg['content']}"))
         return '\n'.join(lines)
 
     def get_messages(self):
@@ -82,8 +83,8 @@ class ChatMemory:
             }
         )
 
-    def add_tool_message(self, tool_call_id: str, tool_response: list | dict):
-        self._messages.append({'role': 'tool', 'content': json.dumps(tool_response, ensure_ascii=False), 'tool_call_id': tool_call_id})
+    def add_tool_message(self, tool_call_id: str, tool_response: str):
+        self._messages.append({'role': 'tool', 'content': tool_response, 'tool_call_id': tool_call_id})
 
 class ChatResponse:
 
@@ -228,7 +229,7 @@ class ChatDeepseek:
                         tool_name: str = v['tool_name']
                         tool_args: dict = json.loads(v['tool_args'])
 
-                        tool_response: list | dict = self._get_tool_response(
+                        tool_response: str = self._get_tool_response(
                             tool_map=tool_map,
                             tool_name=tool_name,
                             tool_args=tool_args
@@ -244,7 +245,10 @@ class ChatDeepseek:
                             completion_tokens=chunk.usage.completion_tokens,
                             total_tokens=chunk.usage.total_tokens
                         )
-                        break
+                        # 这里限制了大模型每次只能调用一次工具, 事实上证明这是对的
+                        # 调用工具 -> Chat -> 调用工具 -> Chat, 这是最稳定的形式
+                        # 如果一次性调用多个工具, 如果下面的工具参数依赖上面工具的返回值, 那就寄了
+                        break  
                 
                 # 非终止情况下处理工具调用
                 if (tool_calls := choice.delta.tool_calls) is not None:
@@ -272,9 +276,9 @@ class ChatDeepseek:
         for tool in tools:
             if inspect.iscoroutinefunction(tool):
                 raise ValueError("工具函数不能是异步函数")
-            if not hasattr(tool, 'tool_definition'):
+            if not hasattr(tool, '_tool_definition'):
                 raise ValueError("工具函数必须使用 @tool 装饰器")
-            tools_definition.append(tool.tool_definition)
+            tools_definition.append(tool._tool_definition)
         return tool_map, tools_definition
 
     def _get_tool_response(
