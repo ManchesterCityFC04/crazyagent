@@ -3,25 +3,14 @@ class Response:
     # 为属性分配固定大小的内存空间, 减少内存占用, 
     # 直接通过固定偏移量访问属性, 比字典查找更快
     __slots__ = (
-        'user_prompt',
-        'assistant_response',
-        'assistant_chunk_response',
+        'content',
         'stop_usage',
         'tool_calls_info',
     )
 
-    def __init__(
-        self,
-        user_prompt: str = None,
-        assistant_response: str = None,
-        assistant_chunk_response: str = None,
-        stop_usage: dict = None,
-    ):
+    def __init__(self, content: str = '', stop_usage: dict = None):
         """
         Args Examples:
-            user_prompt = '今天北京的天气怎么样呀？'
-
-            assistant_response = '北京的天气是 24°C。'
 
             stop_usage = {
                 'prompt_tokens': 100,
@@ -43,9 +32,7 @@ class Response:
                 ...
             ]
         """
-        self.user_prompt: str = user_prompt
-        self.assistant_response: str = assistant_response
-        self.assistant_chunk_response: str = assistant_chunk_response
+        self.content: str = content
         self.stop_usage: dict = stop_usage
         self.tool_calls_info: list[dict] = []
 

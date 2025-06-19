@@ -4,7 +4,7 @@ import requests
 import time
 
 @agent_tool
-def get_weather(city_name: str = Argument(description='城市名称', enum=['北京', '上海'])) -> dict:
+def get_weather(city_name: str = Argument(description='城市名称')) -> dict:
     """获取天气"""
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0'}
     session = requests.session()

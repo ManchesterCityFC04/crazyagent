@@ -1,15 +1,43 @@
 
-from .memory import Memory
+from .memory import *
 from ._response import Response
 
 import inspect
 from typing import Literal
 from collections import defaultdict
+from abc import abstractmethod, ABC
 import json
 
 from openai import OpenAI
 
-class Deepseek:
+class Chat(ABC):
+
+    @abstractmethod
+    def stream(self):
+        pass
+
+    def check_tools(self, tools: list[callable]) -> tuple[dict[str, callable], list[dict]]:
+        tool_map = {tool.__name__: tool for tool in tools}
+        tools_definition = []
+        for tool in tools:
+            if inspect.iscoroutinefunction(tool):
+                raise ValueError("工具函数不能是异步函数")
+            if not hasattr(tool, '_tool_definition'):
+                raise ValueError("工具函数必须使用 @tool 装饰器")
+            tools_definition.append(tool._tool_definition)
+        return tool_map, tools_definition
+
+    def get_tool_response(
+        self, 
+        tool_map: dict[str, callable], 
+        tool_name: str, 
+        tool_args: dict
+    ) -> dict:
+        """获取工具函数的响应"""
+        tool_response = tool_map[tool_name](**tool_args)
+        return tool_response
+
+class Deepseek(Chat):
 
     def __init__(
         self,
@@ -20,27 +48,30 @@ class Deepseek:
         self._client = OpenAI(api_key=api_key, base_url=base_url)
         self.model = model
 
-    def chat(
+    def stream(
         self,
         user_prompt: str, 
         memory: Memory = None, 
         tools: list[callable] = [],
     ):
+        if not isinstance(user_prompt, str):
+            raise ValueError('user_prompt 必须是字符串')
         if memory:
             if not isinstance(memory, Memory):
                 raise ValueError("memory 必须是 Memory 类的实例")
         else:
             memory = Memory()
-        memory.add_user_message(user_prompt)
-        
-        tool_map, tools_definition = self._check_tools(tools)
 
-        chat_response = Response()       
+        memory.add(HumanMessage(content=user_prompt))
+        
+        tool_map, tools_definition = self.check_tools(tools)
+
+        resp = Response()       
         assistant_response: str = ''
         while True:
             chat_completion_stream = self._client.chat.completions.create(
                 model=self.model,
-                messages=memory.get_messages(),
+                messages=list(memory),
                 tools=tools_definition if tools_definition else None,
                 stream=True
             )
@@ -56,33 +87,30 @@ class Deepseek:
 
                 # 正常对话终止
                 if finish_reason == 'stop':
-                    memory.add_assistant_message(assistant_response)
-                    chat_response.user_prompt = user_prompt
-                    chat_response.assistant_response = assistant_response
-                    chat_response.stop_usage = {
+                    memory.add(AIMessage(content=assistant_response))
+                    resp.stop_usage = {
                         'prompt_tokens': chunk.usage.prompt_tokens,
                         'completion_tokens': chunk.usage.completion_tokens,
                         'total_tokens': chunk.usage.total_tokens
                     }
-                    chat_response.assistant_chunk_response = ''
-                    yield chat_response
+                    yield resp
                     return
                 # 工具调用终止
                 elif finish_reason == 'tool_calls':
                     for k, v in dict(tools_to_call).items():
                         tool_call_id: str = k
                         tool_name: str = v['tool_name']
-                        tool_args: dict = json.loads(v['tool_args'])
+                        tool_args: str = v['tool_args']
+                        tool_args_dict: dict = json.loads(v['tool_args'])
 
-                        tool_response: str = self._get_tool_response(
+                        tool_response: str = self.get_tool_response(
                             tool_map=tool_map,
                             tool_name=tool_name,
-                            tool_args=tool_args
+                            tool_args=tool_args_dict
                         )
-
-                        memory.add_assistant_tool_call_message(tool_call_id, tool_name, tool_args)
-                        memory.add_tool_message(tool_call_id, tool_response)
-                        chat_response.add_tool_call_info(
+                        memory.add(AICallToolMessage(tool_call_id, tool_name, tool_args))
+                        memory.add(ToolMessage(tool_response, tool_call_id))
+                        resp.add_tool_call_info(
                             name=tool_name, 
                             args=tool_args, 
                             response=tool_response, 
@@ -113,25 +141,5 @@ class Deepseek:
                 # 非终止情况下处理正常输出
                 else:
                     assistant_response += content
-                    yield Response(assistant_chunk_response=content)
+                    yield Response(content=content)
 
-    def _check_tools(self, tools: list[callable]) -> tuple[dict[str, callable], list[dict]]:
-        tool_map = {tool.__name__: tool for tool in tools}
-        tools_definition = []
-        for tool in tools:
-            if inspect.iscoroutinefunction(tool):
-                raise ValueError("工具函数不能是异步函数")
-            if not hasattr(tool, '_tool_definition'):
-                raise ValueError("工具函数必须使用 @tool 装饰器")
-            tools_definition.append(tool._tool_definition)
-        return tool_map, tools_definition
-
-    def _get_tool_response(
-        self, 
-        tool_map: dict[str, callable], 
-        tool_name: str, 
-        tool_args: dict
-    ) -> dict:
-        """获取工具函数的响应"""
-        tool_response = tool_map[tool_name](**tool_args)
-        return tool_response

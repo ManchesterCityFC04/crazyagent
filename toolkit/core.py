@@ -115,9 +115,9 @@ def agent_tool(func: callable) -> callable:
     @wraps(func)
     def wrap(*args, **kwargs):
         try:
-            r = {'error_occur': False, 'result': func(*args, **kwargs)}
+            r = {'result': func(*args, **kwargs)}
         except Exception as e:
-            r = {'error_occur': True, 'detail': str(e)}
+            r = {'error': str(e)}
         return json.dumps(r, ensure_ascii=False)
     
     wrap._tool_definition = tool_definition

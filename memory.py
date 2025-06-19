@@ -125,6 +125,7 @@ class Memory:
         return self._messages.pop()
 
     def __iter__(self):
+        """根据最大回合数限制返回消息, 用于 openai 模块的 messages 参数"""
         messages = self._messages
         if len(messages) > self.max_turns * 2:
             messages = messages[-self.max_turns*2:]
@@ -133,25 +134,49 @@ class Memory:
         yield from [dict(m) for m in messages]
 
     def __str__(self):
-        r = [[CS.purple('角色'), CS.purple('内容')]]
+        """所有聊天信息的表格化展示"""
+        
+        limit_len = 60
+        cut = lambda s : s[:limit_len] + '...' if len(s) > limit_len else s
+
+        role_en_zh_map = {
+            'system': '系统',
+            'user': '用户',
+            'assistant': '助手',
+            'tool': '工具',
+        }
+
+        r = [['角色', '内容']]
+        if self._system_message:
+            r.append([CS.red('系统'), CS.red(cut(self._system_message.content))])
         for m in self._messages:
             if isinstance(m, SystemMessage):
-                role = CS.red(m.role)
-                content = CS.red(m.content)
+                role = CS.red(role_en_zh_map[m.role])
+                content = CS.red(cut(m.content))
             elif isinstance(m, HumanMessage):
-                role = m.role
-                content = m.content
+                role = CS.purple(role_en_zh_map[m.role])
+                content = CS.purple(cut(m.content))
             elif isinstance(m, AIMessage):
-                role = CS.blue(m.role)
-                content = CS.blue(m.content)
+                role = CS.blue(role_en_zh_map[m.role])
+                content = CS.blue(cut(m.content))
             elif isinstance(m, AICallToolMessage):
-                role = CS.yellow(m.role)
-                content = CS.yellow(f"{m.tool_name}({': '.join(f'{k}="{v}"' if isinstance(v, str) else f'{k}={v}' for k, v in json.loads(m.tool_args).items())})")
+                role = CS.yellow(role_en_zh_map[m.role])
+                try:
+                    content = CS.yellow(cut(f"{m.tool_name}({': '.join(f'{k}="{v}"' if isinstance(v, str) else f'{k}={v}' for k, v in json.loads(m.tool_args).items())})"))
+                except:
+                    content = CS.yellow(f"{m.tool_name}(???)")
             elif isinstance(m, ToolMessage):
-                role = CS.green(m.role)
-                content = CS.green(m.content)
+                role = CS.green(role_en_zh_map[m.role])
+                content = CS.green(cut(m.content))
 
-            if len(content) > 50:
-                content = content[:50] + '...'
             r.append([role, content])
         return tabulate(r, headers='firstrow', tablefmt='grid')
+
+__all__ = [
+    'Memory',
+    'SystemMessage',
+    'HumanMessage',
+    'AIMessage',
+    'AICallToolMessage',
+    'ToolMessage'
+]

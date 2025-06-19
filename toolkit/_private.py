@@ -1,4 +1,5 @@
 from .core import agent_tool, Argument
+from crazy_agent.utils import is_valid_email
 
 from email.mime.text import MIMEText
 from email.utils import formataddr
@@ -25,10 +26,13 @@ def configure_email_service(sender_mail: str, authorization_code: str, server: s
 def send_email(
     subject: str = Argument(description='邮件标题'), 
     sender_name: str = Argument(description='发件人名称'),
-    addressee: str = Argument(description='收件人邮箱地址, 例如: "example@qq.com"'), 
+    addressee: str = Argument(description='收件人邮箱地址, 例如: "example@qq.com", 一定要让用户指定收件人邮箱地址, 否则就拒绝发送邮件'), 
     text: str = Argument(description='邮件正文内容')
 ) -> str:
     """发送邮件"""
+    if not is_valid_email(addressee):
+        raise ValueError(f'邮箱地址 {addressee} 格式不正确')
+
     sender_mail = _email_config['sender_mail']
     authorization_code = _email_config['authorization_code']
     server = _email_config['server']
