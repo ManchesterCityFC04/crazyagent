@@ -1,82 +1,157 @@
+from __future__ import annotations
+
 from .utils import CS
+
+from abc import ABC, abstractmethod
 import json
+
+from tabulate import tabulate
+from typeguard import typechecked
+
+# 当使用 list[str] 作为类型注解时，typeguard 的行为会有以下区别：
+# 对于 print(x([dict(), 1, 'abc']))
+# 列表内至少包含一个 str 类型的元素
+# typeguard 执行"最宽松匹配"检查，发现存在匹配的 str 类型，认为这是一个"部分符合"的情况
+
+class Message(ABC):
+
+    @abstractmethod
+    def __iter__(self):
+        pass
+
+@typechecked
+class SystemMessage(Message):
+
+    def __init__(self, content: str):
+        self.role = 'system'
+        self.content = content
+
+    def __iter__(self):
+        yield 'role', self.role
+        yield 'content', self.content
+
+    def format(self, **kwargs) -> SystemMessage:
+        self.content = self.content.format(**kwargs)
+        return self
+
+@typechecked
+class HumanMessage(Message):
+
+    def __init__(self, content: str):
+        self.role = 'user'
+        self.content = content
+
+    def __iter__(self):
+        yield 'role', self.role
+        yield 'content', self.content
+
+@typechecked
+class AIMessage(Message):
+
+    def __init__(self, content: str):
+        self.role = 'assistant'
+        self.content = content
+
+    def __iter__(self):
+        yield 'role', self.role
+        yield 'content', self.content
+
+@typechecked
+class AICallToolMessage(Message):
+
+    def __init__(self, tool_call_id: str, tool_name: str, tool_args: str):
+        self.role = 'assistant'
+        self.content = None
+        self.tool_call_id = tool_call_id
+        self.tool_name = tool_name
+        self.tool_args = tool_args
+
+    def __iter__(self):
+        yield 'role', self.role
+        yield 'content', self.content
+        yield 'tool_calls', [
+            {
+                'id': self.tool_call_id,
+                'type': 'function',
+                'function': {
+                    'name': self.tool_name,
+                    'arguments': self.tool_args,
+                },
+                'type': 'function',
+                'index': 0
+            }
+        ]
+
+@typechecked
+class ToolMessage(Message):
+
+    def __init__(self, content: str, tool_call_id: str):
+        self.role = 'tool'
+        self.content = content
+        self.tool_call_id = tool_call_id
+    
+    def __iter__(self):
+        yield 'role', self.role
+        yield 'content', self.content
+        yield 'tool_call_id', self.tool_call_id
 
 class Memory:
 
-    def __init__(self):
-        # 消息列表(聊天记录)的最大长度, 必须是双数
-        # 单数会出现 tool 找不到对应的 tool_calls 的情况
-        self.k: int = 10  
-        self.system_prompt: str = None  # 系统提示词
-        self._messages: list[dict] = []  # 消息列表(聊天记录)
+    def __init__(self, max_turns: int = 5):
+        self._messages: list[Message] = []
+        self._system_message: SystemMessage = None
+        self.max_turns = max_turns
+
+    @property
+    def system_message(self) -> SystemMessage:
+        return self._system_message
+
+    @system_message.setter
+    def system_message(self, system_message: SystemMessage) -> None:
+        if not isinstance(system_message, SystemMessage):
+            raise ValueError('系统消息必须是 SystemMessage 类的实例')
+        self._system_message = system_message
+
+    def add(self, *args) -> None:
+        for m in args:
+            if not isinstance(m, Message):
+                raise ValueError('消息必须是 Message 类的实例')
+            if isinstance(m, SystemMessage):
+                raise ValueError('系统消息请使用 system_message 属性设置')
+        for m in args:
+            self._messages.append(m)
+
+    def pop(self) -> Message:
+        return self._messages.pop()
+
+    def __iter__(self):
+        messages = self._messages
+        if len(messages) > self.max_turns * 2:
+            messages = messages[-self.max_turns*2:]
+        if self._system_message:
+            messages = [self._system_message] + messages
+        yield from [dict(m) for m in messages]
 
     def __str__(self):
+        r = [[CS.purple('角色'), CS.purple('内容')]]
+        for m in self._messages:
+            if isinstance(m, SystemMessage):
+                role = CS.red(m.role)
+                content = CS.red(m.content)
+            elif isinstance(m, HumanMessage):
+                role = m.role
+                content = m.content
+            elif isinstance(m, AIMessage):
+                role = CS.blue(m.role)
+                content = CS.blue(m.content)
+            elif isinstance(m, AICallToolMessage):
+                role = CS.yellow(m.role)
+                content = CS.yellow(f"{m.tool_name}({': '.join(f'{k}="{v}"' if isinstance(v, str) else f'{k}={v}' for k, v in json.loads(m.tool_args).items())})")
+            elif isinstance(m, ToolMessage):
+                role = CS.green(m.role)
+                content = CS.green(m.content)
 
-        def cut(s: str, k: int = 50):
-            if len(s) < k:
-                return s
-            else:
-                return s[:k] + '...'
-
-        lines = []
-        for msg in self.get_messages():
-            match msg['role']:
-                case 'system':
-                    lines.append(CS.red(f"[system] > {cut(msg['content'])}"))
-                case 'user':
-                    lines.append(CS.blue(f"[user] > {cut(msg['content'])}"))
-                case 'assistant':
-                    if 'tool_calls' in msg:
-                        tool_call = msg['tool_calls'][0]
-                        args = json.loads(tool_call['function']['arguments'])
-                        lines.append(CS.yellow(f"[assistant] > {tool_call['function']['name']}({': '.join(f'{k}="{v}"' if isinstance(v, str) else f'{k}={v}' for k, v in args.items())})"))
-                    else:
-                        lines.append(CS.purple(f"[assistant] > {cut(msg['content'])}"))
-                case 'tool':
-                    lines.append(CS.green(f"[tool] > {msg['content']}"))
-        return '\n'.join(lines)
-
-    def get_messages(self):
-        """获取聊天信息, 用于对话"""
-        m = self._messages
-        if len(m) > self.k:
-            m = self._messages[-self.k:]
-        if self.system_prompt:
-            m = [{'role': 'system', 'content': self.system_prompt}] + m
-        return m
-
-    def add_user_message(self, user_prompt: str):
-        """添加用户消息"""
-        self._messages.append({'role': 'user', 'content': user_prompt})
-
-    def add_assistant_message(self, assistant_response: str):
-        """添加助手消息"""
-        self._messages.append({'role': 'assistant', 'content': assistant_response})
-
-    def add_assistant_tool_call_message(
-        self, 
-        tool_call_id: str, 
-        tool_name: str, 
-        tool_args: dict
-    ):
-        self._messages.append(
-            {
-                'role': 'assistant', 
-                'content': None, 
-                'tool_calls': [
-                    {
-                        'id': tool_call_id,
-                        'type': 'function',
-                        'function': {
-                            'name': tool_name,
-                            'arguments': json.dumps(tool_args, ensure_ascii=False),
-                        },
-                        'type': 'function',
-                        'index': 0
-                    }
-                ]
-            }
-        )
-
-    def add_tool_message(self, tool_call_id: str, tool_response: str):
-        self._messages.append({'role': 'tool', 'content': tool_response, 'tool_call_id': tool_call_id})
+            if len(content) > 50:
+                content = content[:50] + '...'
+            r.append([role, content])
+        return tabulate(r, headers='firstrow', tablefmt='grid')

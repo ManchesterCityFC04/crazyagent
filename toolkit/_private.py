@@ -10,7 +10,7 @@ _email_config = {
     'server': ''
 }
 
-def set_email_config(sender_mail: str, authorization_code: str, server: str):
+def configure_email_service(sender_mail: str, authorization_code: str, server: str):
     """设置邮箱配置
     Args:
         sender_mail : 发件人邮箱

@@ -123,4 +123,7 @@ def agent_tool(func: callable) -> callable:
     wrap._tool_definition = tool_definition
     return wrap
 
-__all__ = ['agent_tool', 'Argument']
+__all__ = [
+    'Argument',
+    'agent_tool'
+]

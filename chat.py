@@ -1,6 +1,6 @@
 
 from .memory import Memory
-from .response import Response
+from ._response import Response
 
 import inspect
 from typing import Literal
@@ -8,7 +8,6 @@ from collections import defaultdict
 import json
 
 from openai import OpenAI
-
 
 class Deepseek:
 
