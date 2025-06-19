@@ -8,10 +8,10 @@ import json
 from tabulate import tabulate
 from typeguard import typechecked
 
-# 当使用 list[str] 作为类型注解时，typeguard 的行为会有以下区别：
-# 对于 print(x([dict(), 1, 'abc']))
-# 列表内至少包含一个 str 类型的元素
-# typeguard 执行"最宽松匹配"检查，发现存在匹配的 str 类型，认为这是一个"部分符合"的情况
+# When using list[str] as a type annotation, typeguard behaves as follows:
+# For example, print(x([dict(), 1, 'abc']))
+# The list must contain at least one element of type str.
+# typeguard performs a "most permissive match" check; if it finds at least one str, it considers this a "partially matching" case.
 
 class Message(ABC):
 
@@ -109,15 +109,15 @@ class Memory:
     @system_message.setter
     def system_message(self, system_message: SystemMessage) -> None:
         if not isinstance(system_message, SystemMessage):
-            raise ValueError('系统消息必须是 SystemMessage 类的实例')
+            raise ValueError('System message must be an instance of the SystemMessage class')
         self._system_message = system_message
 
-    def add(self, *args) -> None:
+    def update(self, *args) -> None:
         for m in args:
             if not isinstance(m, Message):
-                raise ValueError('消息必须是 Message 类的实例')
+                raise ValueError('Message must be an instance of the Message class')
             if isinstance(m, SystemMessage):
-                raise ValueError('系统消息请使用 system_message 属性设置')
+                raise ValueError('Please set the system message using the system_message property')
         for m in args:
             self._messages.append(m)
 
@@ -125,7 +125,7 @@ class Memory:
         return self._messages.pop()
 
     def __iter__(self):
-        """根据最大回合数限制返回消息, 用于 openai 模块的 messages 参数"""
+        """Return messages limited by max_turns, for use as the 'messages' parameter in the OpenAI module."""
         messages = self._messages
         if len(messages) > self.max_turns * 2:
             messages = messages[-self.max_turns*2:]
@@ -134,39 +134,35 @@ class Memory:
         yield from [dict(m) for m in messages]
 
     def __str__(self):
-        """所有聊天信息的表格化展示"""
-        
+        """Tabular display of all chat messages"""
         limit_len = 60
         cut = lambda s : s[:limit_len] + '...' if len(s) > limit_len else s
 
-        role_en_zh_map = {
-            'system': '系统',
-            'user': '用户',
-            'assistant': '助手',
-            'tool': '工具',
-        }
+        # role_en_zh_map = {
+        #     'system': '系统',
+        #     'user': '用户',
+        #     'assistant': '助手',
+        #     'tool': '工具',
+        # }
 
-        r = [['角色', '内容']]
+        r = [['Role', 'Content']]
         if self._system_message:
-            r.append([CS.red('系统'), CS.red(cut(self._system_message.content))])
+            r.append([CS.red('system'), CS.red(cut(self._system_message.content))])
         for m in self._messages:
-            if isinstance(m, SystemMessage):
-                role = CS.red(role_en_zh_map[m.role])
-                content = CS.red(cut(m.content))
-            elif isinstance(m, HumanMessage):
-                role = CS.purple(role_en_zh_map[m.role])
+            if isinstance(m, HumanMessage):
+                role = CS.purple('user')
                 content = CS.purple(cut(m.content))
             elif isinstance(m, AIMessage):
-                role = CS.blue(role_en_zh_map[m.role])
+                role = CS.blue('assistant')
                 content = CS.blue(cut(m.content))
             elif isinstance(m, AICallToolMessage):
-                role = CS.yellow(role_en_zh_map[m.role])
+                role = CS.yellow('assistant')
                 try:
                     content = CS.yellow(cut(f"{m.tool_name}({': '.join(f'{k}="{v}"' if isinstance(v, str) else f'{k}={v}' for k, v in json.loads(m.tool_args).items())})"))
                 except:
                     content = CS.yellow(f"{m.tool_name}(???)")
             elif isinstance(m, ToolMessage):
-                role = CS.green(role_en_zh_map[m.role])
+                role = CS.green('tool')
                 content = CS.green(cut(m.content))
 
             r.append([role, content])

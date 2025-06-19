@@ -1,6 +1,8 @@
 import re 
 from colorama import Fore, Style
 
+HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0',}
+
 class CS:
 
     @staticmethod
@@ -23,7 +25,6 @@ class CS:
     def blue(string: str) -> str:
         return Fore.LIGHTBLUE_EX + string + Style.RESET_ALL
     
-
 def is_valid_email(email: str) -> bool:
     """
     验证邮箱地址是否有效

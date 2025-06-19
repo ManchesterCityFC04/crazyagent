@@ -21,9 +21,9 @@ class Chat(ABC):
         tools_definition = []
         for tool in tools:
             if inspect.iscoroutinefunction(tool):
-                raise ValueError("工具函数不能是异步函数")
+                raise ValueError("Tool functions cannot be asynchronous")
             if not hasattr(tool, '_tool_definition'):
-                raise ValueError("工具函数必须使用 @tool 装饰器")
+                raise ValueError("Tool functions must use the @crazy_tool decorator")
             tools_definition.append(tool._tool_definition)
         return tool_map, tools_definition
 
@@ -33,7 +33,6 @@ class Chat(ABC):
         tool_name: str, 
         tool_args: dict
     ) -> dict:
-        """获取工具函数的响应"""
         tool_response = tool_map[tool_name](**tool_args)
         return tool_response
 
@@ -50,19 +49,19 @@ class Deepseek(Chat):
 
     def stream(
         self,
-        user_prompt: str, 
+        user_prompt: str = None, 
         memory: Memory = None, 
         tools: list[callable] = [],
     ):
-        if not isinstance(user_prompt, str):
-            raise ValueError('user_prompt 必须是字符串')
+        if (not user_prompt is None) and not isinstance(user_prompt, str):
+            raise ValueError('user_prompt must be a string or None')
         if memory:
             if not isinstance(memory, Memory):
-                raise ValueError("memory 必须是 Memory 类的实例")
+                raise ValueError("memory must be a Memory object")
         else:
             memory = Memory()
-
-        memory.add(HumanMessage(content=user_prompt))
+        if user_prompt is not None:
+            memory.update(HumanMessage(content=user_prompt))
         
         tool_map, tools_definition = self.check_tools(tools)
 
@@ -85,9 +84,9 @@ class Deepseek(Chat):
                 content: str | None = choice.delta.content  
                 if content == '' and finish_reason not in ['stop', 'tool_calls']: continue
 
-                # 正常对话终止
+                # Normal conversation termination
                 if finish_reason == 'stop':
-                    memory.add(AIMessage(content=assistant_response))
+                    memory.update(AIMessage(content=assistant_response))
                     resp.stop_usage = {
                         'prompt_tokens': chunk.usage.prompt_tokens,
                         'completion_tokens': chunk.usage.completion_tokens,
@@ -95,7 +94,7 @@ class Deepseek(Chat):
                     }
                     yield resp
                     return
-                # 工具调用终止
+                # Tool call termination
                 elif finish_reason == 'tool_calls':
                     for k, v in dict(tools_to_call).items():
                         tool_call_id: str = k
@@ -108,8 +107,7 @@ class Deepseek(Chat):
                             tool_name=tool_name,
                             tool_args=tool_args_dict
                         )
-                        memory.add(AICallToolMessage(tool_call_id, tool_name, tool_args))
-                        memory.add(ToolMessage(tool_response, tool_call_id))
+                        memory.update(AICallToolMessage(tool_call_id, tool_name, tool_args), ToolMessage(tool_response, tool_call_id))
                         resp.add_tool_call_info(
                             name=tool_name, 
                             args=tool_args, 
@@ -118,12 +116,12 @@ class Deepseek(Chat):
                             completion_tokens=chunk.usage.completion_tokens,
                             total_tokens=chunk.usage.total_tokens
                         )
-                        # 这里限制了大模型每次只能调用一次工具, 事实上证明这是对的
-                        # 调用工具 -> Chat -> 调用工具 -> Chat, 这是最稳定的形式
-                        # 如果一次性调用多个工具, 如果下面的工具参数依赖上面工具的返回值, 那就寄了
+                        # This restricts the model to calling only one tool at a time, which has proven to be correct.
+                        # The most stable pattern is: tool call -> chat -> tool call -> chat.
+                        # If multiple tools are called at once, and a tool's arguments depend on the output of a previous tool, it will fail.
                         break  
                 
-                # 非终止情况下处理工具调用
+                # Handle tool calls in non-termination cases
                 if (tool_calls := choice.delta.tool_calls) is not None:
                     tool_call = tool_calls[0]  # 获取第一个工具调用
                     # func_name 第一次出现是字符串, 其余出现是 None
@@ -138,7 +136,8 @@ class Deepseek(Chat):
                         tools_to_call[now_tool_call_id]['tool_args'] = ''
                     tools_to_call[now_tool_call_id]['tool_args'] += func_args
                     continue
-                # 非终止情况下处理正常输出
+                # Handle content in non-termination cases
+                if content is None: continue
                 else:
                     assistant_response += content
                     yield Response(content=content)

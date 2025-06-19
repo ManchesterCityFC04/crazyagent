@@ -1,9 +1,14 @@
-from .core import agent_tool, Argument
-from crazy_agent.utils import is_valid_email
+from .core import crazy_tool, Argument, default_argument
+from crazy_agent.utils import is_valid_email, HEADERS
+
+import os
+import uuid
 
 from email.mime.text import MIMEText
 from email.utils import formataddr
 import smtplib
+
+import requests
 
 _email_config = {
     'sender_mail': '',
@@ -12,44 +17,123 @@ _email_config = {
 }
 
 def configure_email_service(sender_mail: str, authorization_code: str, server: str):
-    """设置邮箱配置
+    """Configure email service settings.
+
     Args:
-        sender_mail : 发件人邮箱
-        authorization_code : 邮箱授权码
-        server : 邮箱服务器
+        sender_mail: Sender's email address.
+        authorization_code: Email authorization code.
+        server: Email server address.
     """
+    global _email_config
     _email_config['sender_mail'] = sender_mail
     _email_config['authorization_code'] = authorization_code
     _email_config['server'] = server
 
-@agent_tool
+@crazy_tool
 def send_email(
-    subject: str = Argument(description='邮件标题'), 
-    sender_name: str = Argument(description='发件人名称'),
-    addressee: str = Argument(description='收件人邮箱地址, 例如: "example@qq.com", 一定要让用户指定收件人邮箱地址, 否则就拒绝发送邮件'), 
-    text: str = Argument(description='邮件正文内容')
+    subject: str = Argument(description='Email subject'), 
+    sender_name: str = Argument(description='Sender name, e.g., "Crazy Agent".'),
+    addressee: str = Argument(description='Recipient email address, e.g., "example@qq.com". If not specified, the email will not be sent.'), 
+    text: str = Argument(description='Email body content')
 ) -> str:
-    """发送邮件"""
+    """
+    Send an email
+
+    Args:
+        subject: Email subject.
+        sender_name: Sender name, e.g., "Crazy Agent".
+        addressee: Recipient email address, e.g., "example@qq.com". If not specified, the email will not be sent.
+        text: Email body content.
+
+    Returns:
+        str: A message indicating whether the email is sent successfully.
+    """
     if not is_valid_email(addressee):
-        raise ValueError(f'邮箱地址 {addressee} 格式不正确')
+        raise ValueError(f'Email address {addressee} is invalid')
 
     sender_mail = _email_config['sender_mail']
     authorization_code = _email_config['authorization_code']
     server = _email_config['server']
-    # 创建SMTP对象
+    # Create SMTP object
     smtp = smtplib.SMTP_SSL(server)
-    # 登录邮箱
+    # Login to email account
     smtp.login(sender_mail, authorization_code)
 
-    # 使用MIMEText创建电子邮件内容，指定内容类型为HTML和字符编码为UTF-8
+    # Create email content using MIMEText, specify content type as plain text and encoding as UTF-8
     msg = MIMEText(text, "plain", "utf-8")
-    # 设置电子邮件主题
+    # Set email subject
     msg['Subject'] = subject
-    # 设置发件人信息，包括发件人名字和邮箱地址
+    # Set sender information, including sender name and email address
     msg["From"] = formataddr((sender_name, sender_mail))
-    # 设置收件人邮箱地址
+    # Set recipient email address
     msg['To'] = addressee
     with smtplib.SMTP_SSL(server) as server:
         server.login(sender_mail, authorization_code)
         server.sendmail(sender_mail, addressee, msg.as_string())
     return f'email is sent to {addressee}'
+
+_save_dir = None
+
+def configure_save_dir(save_dir: str):
+    """Configure the directory where files will be saved.
+
+    Args:
+        save_dir: Directory where files will be saved.
+
+    Raises:
+        ValueError: If the path is not absolute or does not exist.
+    """
+    global _save_dir
+    if not os.path.isabs(save_dir):
+        raise ValueError("The save_dir must be an absolute path.")
+    if not os.path.isdir(save_dir):
+        raise ValueError(f"The directory '{save_dir}' does not exist.")
+    _save_dir = save_dir
+
+@crazy_tool
+def fetch_and_save(
+    url_file_pairs: list = Argument(description="""\
+A list of URL and filename pairs, where each pair is a list containing two elements: the URL and the filename.
+Example:
+```python
+    [
+        ['http://example.com/image.jpg', 'image1.jpg'],
+        ['http://example.com/image2.jpg', 'image2.jpg'],
+        ['http://example.com/image3.jpg', 'image3.jpg']
+    ]
+```
+"""), 
+    open_the_dir: bool = Argument(description='Open the folder', default=True)
+) -> str:
+    """
+    Fetch and save files from a list of URL and filename pairs.
+    
+    Args:
+        url_file_pairs: A list of URL and filename pairs, where each pair is a list containing two elements: the URL and the filename.
+            Example:   
+            ```python
+                [
+                    ['http://example.com/image.jpg', 'image1.jpg'],
+                    ['http://example.com/image2.jpg', 'image2.jpg'],
+                    ['http://example.com/image3.jpg', 'image3.jpg']
+                ]
+            ```
+        open_the_dir: Open the folder (default: True).
+
+    Returns:
+        str: A message indicating the location of the saved files.
+    """
+    default_argument(open_the_dir)
+
+    temp_dir = os.path.join(_save_dir, str(uuid.uuid4().hex))
+    os.makedirs(temp_dir, exist_ok=True)
+
+    if open_the_dir:
+        os.startfile(temp_dir)
+
+    for url, filename in url_file_pairs:
+        response = requests.get(url, headers=HEADERS)
+        with open(os.path.join(temp_dir, filename), 'wb') as f:
+            f.write(response.content)
+
+    return f'Files are saved to {temp_dir}'

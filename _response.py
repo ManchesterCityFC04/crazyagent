@@ -1,7 +1,7 @@
 class Response:
 
-    # 为属性分配固定大小的内存空间, 减少内存占用, 
-    # 直接通过固定偏移量访问属性, 比字典查找更快
+    # Allocate fixed-size memory for attributes to reduce memory usage,
+    # and access attributes directly by fixed offsets, which is faster than dictionary lookup
     __slots__ = (
         'content',
         'stop_usage',
@@ -10,27 +10,30 @@ class Response:
 
     def __init__(self, content: str = '', stop_usage: dict = None):
         """
-        Args Examples:
+        Args:
+            content: The (chunk) content of the response.
 
-            stop_usage = {
-                'prompt_tokens': 100,
-                'completion_tokens': 100,
-                'total_tokens': 200,
-            }
+            stop_usage: The usage information of the response.
+                e.g.: {
+                    'prompt_tokens': 100,
+                    'completion_tokens': 100,
+                    'total_tokens': 200,
+                }
 
-            tool_calls_info = [
-                {
-                    'name': 'get_weather',
-                    'args': {"city": "北京"},
-                    'response': {"temp": "24°C"},
-                    'usage': {
-                        'prompt_tokens': 100,
-                        'completion_tokens': 100,
-                        'total_tokens': 200
-                    }
-                },
-                ...
-            ]
+            *tool_calls_info: The information of the tool calls.
+                e.g.: [
+                    {
+                        'name': 'get_weather',
+                        'args': {"city": "北京"},
+                        'response': {"temp": "24°C"},
+                        'usage': {
+                            'prompt_tokens': 100,
+                            'completion_tokens': 100,
+                            'total_tokens': 200
+                        }
+                    },
+                    ...
+                ]
         """
         self.content: str = content
         self.stop_usage: dict = stop_usage
@@ -58,7 +61,7 @@ class Response:
 
     @property
     def total_tokens(self) -> int:
-        """消耗的总 token 数量(包括工具调用)"""
+        """Total number of tokens consumed (including tool calls)."""
         if self.stop_usage is None:
-            raise Exception('stop_usage 未被设置')
+            return None
         return self.stop_usage.get('total_tokens', 0) + sum([t['usage']['total_tokens'] for t in self.tool_calls_info])

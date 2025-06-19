@@ -44,50 +44,54 @@ class Argument:
         enum: list[JSONType] = ... # type: ignore
     ):
         if not description or not isinstance(description, str):
-            raise ValueError('description 必须是非空字符串')
+            raise ValueError('description must be a non-empty string')
         if (default is not ...) and (type(default) not in _PYTHON_JSON_TYPE_MAP):
-            raise ValueError(f'default 类型必须是支持的类型: {_all_supported_types}')
+            raise ValueError(f'default type must be one of the supported types: {_all_supported_types}')
         if enum is not ...:
             for e in enum:
                 if type(e) not in _PYTHON_JSON_TYPE_MAP:
-                    raise ValueError(f'enum 中的值必须是支持的类型: {_all_supported_types}')
+                    raise ValueError(f'enum values must be one of the supported types: {_all_supported_types}')
         self.description = description
         self.default = default
         self.required = required
         self.enum = enum
+
+def default_argument(value) -> None:
+    if isinstance(value, Argument):
+        value = value.default
 
 import inspect
 from collections import defaultdict
 from functools import wraps
 import json
 
-def agent_tool(func: callable) -> callable:
-    """将函数转换为 agent 工具"""
+def crazy_tool(func: callable) -> callable:
+    """Convert a function into an agent tool"""
     properties = defaultdict(dict)
     required_s = []
 
     for _, param in inspect.signature(func).parameters.items():
-        # param.name 是参数的名称, 和 _ 一样
-        # param.default 是参数的默认值, 如果未指定默认值, 则为 inspect._empty
-        # param.annotation 是参数的注释, 即参数的类型, 例如 <class 'int'>、<class 'str'>
-        # param.annotation.__name__ 是参数的类型的字符串表示, 例如 'int'、'str' 
+        # param.name is the parameter name, same as _
+        # param.default is the default value of the parameter, if not specified, it is inspect._empty
+        # param.annotation is the annotation of the parameter, i.e., the type of the parameter, such as <class 'int'>, <class 'str'>
+        # param.annotation.__name__ is the string representation of the parameter type, such as 'int', 'str'
         if param.annotation is inspect._empty:
-            raise ValueError(f'函数 {func.__name__} 的参数 {param.name} 必须指定类型')
+            raise ValueError(f'Parameter {param.name} of function {func.__name__} must have a type annotation')
 
         if isinstance(param.annotation, UnionType):
             param_types = []
             for sub_type in param.annotation.__args__:
                 if sub_type not in _PYTHON_JSON_TYPE_MAP:
-                    raise ValueError(f'函数 {func.__name__} 只支持的参数类型: {_all_supported_types}')
+                    raise ValueError(f'Function {func.__name__} only supports parameter types: {_all_supported_types}')
                 param_types.append(_PYTHON_JSON_TYPE_MAP[sub_type])
             properties[param.name]['type'] = param_types
         else:
             if param.annotation not in _PYTHON_JSON_TYPE_MAP:
-                raise ValueError(f'函数 {func.__name__} 只支持的参数类型: {_all_supported_types}')
+                raise ValueError(f'Function {func.__name__} only supports parameter types: {_all_supported_types}')
             properties[param.name]['type'] = _PYTHON_JSON_TYPE_MAP[param.annotation]
 
         if not isinstance(param.default, Argument):
-            raise ValueError(f'函数 {func.__name__} 的参数 {param.name} 的必须有默认值且是 Argument 类型')
+            raise ValueError(f'Parameter {param.name} of function {func.__name__} must have a default value of type Argument')
 
         arguement: Argument = param.default
         properties[param.name]['description'] = arguement.description
@@ -99,13 +103,13 @@ def agent_tool(func: callable) -> callable:
             properties[param.name]['enum'] = arguement.enum
 
         if not func.__doc__:
-            raise ValueError(f'函数 {func.__name__} 的文档字符串不能为空')
+            raise ValueError(f'Docstring of function {func.__name__} cannot be empty')
 
         tool_definition = {
             "type": "function",
             "function": {
                 "name": func.__name__,
-                "strict": True,  # 严格模式, 参数类型必须严格匹配
+                "strict": True,  # Strict mode, if the parameters are not specified, an error will be returned
                 "description": func.__doc__ if func.__doc__ else '',
                 "parameters": {"type": "object", "properties": dict(properties), "additionalProperties": False},
                 "required": required_s
@@ -117,7 +121,8 @@ def agent_tool(func: callable) -> callable:
         try:
             r = {'result': func(*args, **kwargs)}
         except Exception as e:
-            r = {'error': str(e)}
+            raise e
+            # r = {'error': str(e)}
         return json.dumps(r, ensure_ascii=False)
     
     wrap._tool_definition = tool_definition
@@ -125,5 +130,6 @@ def agent_tool(func: callable) -> callable:
 
 __all__ = [
     'Argument',
-    'agent_tool'
+    'crazy_tool',
+    'default_argument'
 ]
