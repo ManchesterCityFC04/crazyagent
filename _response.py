@@ -44,19 +44,13 @@ class Response:
         name: str, 
         args: dict,
         response: list | dict, 
-        prompt_tokens: int,
-        completion_tokens: int,
-        total_tokens: int
+        usage: dict[str, int]
     ):
         self.tool_calls_info.append({
             'name': name,
             'args': args,
             'response': response,
-            'usage': {
-                'prompt_tokens': prompt_tokens,
-                'completion_tokens': completion_tokens,
-                'total_tokens': total_tokens
-            }
+            'usage': usage
         })
 
     @property

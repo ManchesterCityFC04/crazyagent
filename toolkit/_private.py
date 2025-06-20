@@ -1,4 +1,4 @@
-from .core import crazy_tool, Argument, default_argument
+from .core import crazy_tool, Argument
 from crazy_agent.utils import is_valid_email, HEADERS
 
 import os
@@ -10,11 +10,7 @@ import smtplib
 
 import requests
 
-_email_config = {
-    'sender_mail': '',
-    'authorization_code': '',
-    'server': ''
-}
+_email_config = None
 
 def configure_email_service(sender_mail: str, authorization_code: str, server: str):
     """Configure email service settings.
@@ -25,9 +21,11 @@ def configure_email_service(sender_mail: str, authorization_code: str, server: s
         server: Email server address.
     """
     global _email_config
-    _email_config['sender_mail'] = sender_mail
-    _email_config['authorization_code'] = authorization_code
-    _email_config['server'] = server
+    _email_config = {
+        'sender_mail': sender_mail,
+        'authorization_code': authorization_code,
+        'server': server
+    }
 
 @crazy_tool
 def send_email(
@@ -37,17 +35,14 @@ def send_email(
     text: str = Argument(description='Email body content')
 ) -> str:
     """
-    Send an email
-
-    Args:
-        subject: Email subject.
-        sender_name: Sender name, e.g., "Crazy Agent".
-        addressee: Recipient email address, e.g., "example@qq.com". If not specified, the email will not be sent.
-        text: Email body content.
+    Send an email.
 
     Returns:
         str: A message indicating whether the email is sent successfully.
     """
+    if _email_config is None:
+        raise ValueError('Please configure the email service first using configure_email_service function')
+
     if not is_valid_email(addressee):
         raise ValueError(f'Email address {addressee} is invalid')
 
@@ -102,34 +97,20 @@ Example:
         ['http://example.com/image3.jpg', 'image3.jpg']
     ]
 ```
-"""), 
-    open_the_dir: bool = Argument(description='Open the folder', default=True)
+""")
 ) -> str:
     """
     Fetch and save files from a list of URL and filename pairs.
-    
-    Args:
-        url_file_pairs: A list of URL and filename pairs, where each pair is a list containing two elements: the URL and the filename.
-            Example:   
-            ```python
-                [
-                    ['http://example.com/image.jpg', 'image1.jpg'],
-                    ['http://example.com/image2.jpg', 'image2.jpg'],
-                    ['http://example.com/image3.jpg', 'image3.jpg']
-                ]
-            ```
-        open_the_dir: Open the folder (default: True).
 
     Returns:
-        str: A message indicating the location of the saved files.
+        A message indicating the location of the saved files.
     """
-    default_argument(open_the_dir)
+    if _save_dir is None:
+        raise ValueError('Please configure the save_dir first using configure_save_dir function')
 
     temp_dir = os.path.join(_save_dir, str(uuid.uuid4().hex))
     os.makedirs(temp_dir, exist_ok=True)
-
-    if open_the_dir:
-        os.startfile(temp_dir)
+    os.startfile(temp_dir)
 
     for url, filename in url_file_pairs:
         response = requests.get(url, headers=HEADERS)

@@ -1,4 +1,4 @@
-from .core import crazy_tool, Argument, default_argument
+from .core import crazy_tool, Argument
 from crazy_agent.utils import HEADERS
 
 import requests
@@ -9,9 +9,6 @@ def get_weather(city_name: str = Argument('City name, e.g., "Guangzhou". If city
     """
     Get weather information for a given city.
     Data source: China Meteorological Administration (https://weather.cma.cn/).
-
-    Args:
-        city_name: City name, e.g., "Guangzhou". If city name is not specified, refuse to provide weather information.
 
     Returns:
         Weather information dictionary if city is found, otherwise a string indicating city not found.
@@ -38,17 +35,11 @@ def get_weather(city_name: str = Argument('City name, e.g., "Guangzhou". If city
 def search_image(query: str = Argument('Search keyword'), page: int = Argument('Page number', default=1)) -> list[str]:
     """
     Search for images based on the provided query.    
-    Data source: https://www.duitang.com/
-    
-    Args:
-        query: Search keyword
-        page: Page number (default: 1)
+    Data source: https://www.duitang.com/.
         
     Returns:
-        List of image URLs
+        List of image URLs.
     """
-    default_argument(page)
-
     url = 'https://www.duitang.com/napi/blogv2/list/by_search/'
     params = {
         'kw': query,

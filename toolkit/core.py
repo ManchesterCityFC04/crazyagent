@@ -56,10 +56,6 @@ class Argument:
         self.required = required
         self.enum = enum
 
-def default_argument(value) -> None:
-    if isinstance(value, Argument):
-        value = value.default
-
 import inspect
 from collections import defaultdict
 from functools import wraps
@@ -117,12 +113,14 @@ def crazy_tool(func: callable) -> callable:
         }
 
     @wraps(func)
-    def wrap(*args, **kwargs):
+    def wrap(**kwargs):
         try:
-            r = {'result': func(*args, **kwargs)}
+            for required in required_s:
+                if required not in kwargs:
+                    raise ValueError(f'Missing required parameter: {required}')
+            r = {'result': func(**kwargs)}
         except Exception as e:
-            raise e
-            # r = {'error': str(e)}
+            r = {'error': str(e)}
         return json.dumps(r, ensure_ascii=False)
     
     wrap._tool_definition = tool_definition
