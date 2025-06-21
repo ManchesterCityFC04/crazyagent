@@ -135,38 +135,33 @@ class Memory:
 
     def __str__(self):
         """Tabular display of all chat messages"""
-        limit_len = 50
-        cut = lambda s : s[:limit_len] + '...' if len(s) > limit_len else s
-
-        # role_en_zh_map = {
-        #     'system': '系统',
-        #     'user': '用户',
-        #     'assistant': '助手',
-        #     'tool': '工具',
-        # }
-
         r = [['Role', 'Content']]
         if self._system_message:
-            r.append([CS.red('system'), CS.red(cut(self._system_message.content))])
+            r.append([CS.red('system'), CS.red(self._system_message.content)])
         for m in self._messages:
             if isinstance(m, HumanMessage):
                 role = CS.purple('user')
-                content = CS.purple(cut(m.content))
+                content = CS.purple(m.content)
             elif isinstance(m, AIMessage):
                 role = CS.blue('assistant')
-                content = CS.blue(cut(m.content))
+                content = CS.blue(m.content)
             elif isinstance(m, AICallToolMessage):
                 role = CS.yellow('assistant')
                 try:
-                    content = CS.yellow(cut(f"{m.tool_name}({': '.join(f'{k}="{v}"' if isinstance(v, str) else f'{k}={v}' for k, v in json.loads(m.tool_args).items())})"))
+                    tool_args = json.loads(m.tool_args)
+                    formatted_args = ', '.join(
+                        f'{k}="{v}"' if isinstance(v, str) else f'{k}={v}'
+                        for k, v in tool_args.items()
+                    )
+                    content = CS.yellow(f"{m.tool_name}({formatted_args})")
                 except:
                     content = CS.yellow(f"{m.tool_name}(???)")
             elif isinstance(m, ToolMessage):
                 role = CS.green('tool')
-                content = CS.green(cut(m.content))
+                content = CS.green(m.content)
 
             r.append([role, content])
-        return tabulate(r, headers='firstrow', tablefmt='grid')
+        return tabulate(r, headers='firstrow', tablefmt='grid', maxcolwidths=[None, 100])
 
 __all__ = [
     'Memory',
