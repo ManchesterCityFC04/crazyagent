@@ -135,7 +135,7 @@ class Memory:
 
     def __str__(self):
         """Tabular display of all chat messages"""
-        limit_len = 60
+        limit_len = 50
         cut = lambda s : s[:limit_len] + '...' if len(s) > limit_len else s
 
         # role_en_zh_map = {

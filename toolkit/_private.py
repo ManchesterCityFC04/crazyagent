@@ -1,5 +1,5 @@
 from .core import crazy_tool, Argument
-from crazy_agent.utils import is_valid_email, HEADERS
+from crazyagent.utils import is_valid_email, HEADERS
 
 import os
 import uuid

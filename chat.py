@@ -231,7 +231,7 @@ class Deepseek(Chat):
 
     def check_temperature(self, temperature: float | None) -> float:
         temperature_range = (0, 1.5)
-        default_temperature = 1.3
+        default_temperature = 1.0
         if temperature is None:
             return default_temperature
         if not isinstance(temperature, float):

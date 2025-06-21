@@ -1,11 +1,11 @@
 from .core import crazy_tool, Argument
-from crazy_agent.utils import HEADERS
+from crazyagent.utils import HEADERS
 
 import requests
 import time
 
 @crazy_tool
-def get_weather(city_name: str = Argument('City name, e.g., "Guangzhou". If city name is not specified, refuse to provide weather information.')) -> dict | str:
+def get_weather(city_name: str = Argument('City name, e.g., "广州". If city name is not specified, refuse to provide weather information.')) -> dict | str:
     """
     Get weather information for a given city.
     Data source: China Meteorological Administration (https://weather.cma.cn/).
