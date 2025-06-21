@@ -13,6 +13,8 @@ from typeguard import typechecked
 # The list must contain at least one element of type str.
 # typeguard performs a "most permissive match" check; if it finds at least one str, it considers this a "partially matching" case.
 
+MAXCOLWIDTH = 100
+
 class Message(ABC):
 
     @abstractmethod
@@ -161,7 +163,7 @@ class Memory:
                 content = CS.green(m.content)
 
             r.append([role, content])
-        return tabulate(r, headers='firstrow', tablefmt='grid', maxcolwidths=[None, 100])
+        return tabulate(r, headers='firstrow', tablefmt='grid', maxcolwidths=[None, MAXCOLWIDTH])
 
 __all__ = [
     'Memory',

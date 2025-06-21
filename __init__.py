@@ -1,2 +1,2 @@
-__version__ = '1.0.3'
-__author__ = 'Crazysand <lyt041006@gmail.com>'
+__version__ = '1.0.4'
+__author__ = 'CrazySand <lyt041006@gmail.com>'

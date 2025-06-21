@@ -1,12 +1,28 @@
 <p align="center">
-  <a href="#"><img src="docs/logo.svg" alt="CrazyAgent" width="100%"></a>
+  <a href="#"><img src="docs/logo.png" alt="CrazyAgent" width="100%"></a>
 </p>
 
 <p align="center">
     <em>极简高效、易于集成、灵活扩展、上下文管理强大、适合新手的 LLM 智能体开发框架</em>
 </p>
 
-*CrazyAgent* 是专为国内智能体开发新手打造的框架，语法简洁明了，便于将大模型与各类工具和组件高效集成，并能灵活管理上下文记忆，大幅提升开发效率。即使是刚接触 Python 的用户也能快速上手
+*CrazyAgent* 是专为智能体开发新手打造的框架，语法简洁明了，便于将大模型与各类工具和组件高效集成，并能灵活管理上下文记忆，大幅提升开发效率。即使是刚接触 Python 的用户也能快速上手
+
+<p align="center">
+<a href="https://opensource.org/licenses/MIT" target="_blank">
+    <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+</a>
+<a href="https://pypi.org/project/crazyagent/" target="_blank">
+    <img src="https://img.shields.io/badge/pypi%20package%20-v1.0.4-green" alt="Package version">
+</a>
+<a href="https://pypi.org/project/crazyagent/" target="_blank">
+    <img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-%2334D058" alt="Supported Python versions">
+</a>
+<br>
+<a href="https://pypi.org/project/crazyagent/" target="_blank">
+    <img src="https://img.shields.io/badge/%E4%BD%9C%E8%80%85-%E6%B7%B1%E5%9C%B3%E4%BF%A1%E6%81%AF%E8%81%8C%E4%B8%9A%E6%8A%80%E6%9C%AF%E5%A4%A7%E5%AD%A6%20%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E9%99%A2%20%E9%BB%8E%E6%98%8E%E8%BD%A9-8A2BE2" alt="Supported Python versions">
+</a>
+</p>
 
 ## 特性
 
@@ -24,14 +40,13 @@
 
 *CrazyAgent* 站在以下巨人肩膀上
 
-* <a href="https://github.com/langchain-ai/langchain" class="external-link" target="_blank">LangChain</a> 负责提供框架设计灵感
-* <a href="https://github.com/openai/openai-python" class="external-link" target="_blank">Openai</a> 负责与大模型底层通信
-
+* <a href="https://github.com/langchain-ai/langchain" class="external-link" target="_blank">langchain</a> 负责提供框架设计灵感
+* <a href="https://github.com/openai/openai-python" class="external-link" target="_blank">openai</a> 负责与大模型底层通信
 
 ## 安装
 
 ```console
-$ pip install crazyagent
+$ python -m pip install crazyagent
 ```
 
 ## 对话
@@ -162,8 +177,6 @@ while True:
 ```
 <img src="docs/2.gif" alt="示例效果">
 
-
-
 ## 工具
 
 ### CrazyAgent 提供了整个地球上最精简、高效、迅速和稳定的工具构建框架！
@@ -217,15 +230,7 @@ from crazyagent.toolkit.core import crazy_tool, Argument
 
 @crazy_tool
 def get_weather(city_name: str = Argument("城市名称")) -> dict:
-    """
-    查询天气
-
-    Args:
-        city_name (str): 城市名称
-
-    Returns:
-        dict: 天气信息
-    """
+    """查询天气"""
     ...  # 假设这里是查询天气的逻辑
     return {
         "city_name": city_name,
@@ -259,7 +264,11 @@ from crazyagent.chat import Deepseek
 YOUR_API_KEY = '...'  # 请替换为你的 API 密钥
 
 # 为私有工具函数 send_email 配置邮件服务的 API 密钥信息
-configure_email_service('...', '...', '...')
+configure_email_service(
+    sender_mail='...',  # 替换为实际的发件人邮箱地址
+    authorization_code='...',   # 替换为实际的授权码
+    server='...'  # 替换为实际的 SMTP 服务器地址
+)
 
 llm = Deepseek(api_key=DEEPSEEK_API_KEY)
 memory = Memory()
@@ -285,8 +294,6 @@ while True:
 然后大模型就理解了用户的意图，首先选择了 `get_weather` 工具函数来获取天气信息，然后选择了 `send_email` 工具函数来发送邮件
 **这么丝滑稳定的使用体验，归功于 *CrazyAgent* 对于工具模块极其优秀的设计理念**
 
-
-
 ## 漂亮的提示词
 
 *CrazyAgent* 提供非常多优秀的提示词，有着不同的种类，可以通过 `crazyagent.pretty_prompts` 模块导入
@@ -301,15 +308,13 @@ memory.system_message = SystemMessage(LOVER)  # 把优秀的提示词作为系�
 ...  # 对话逻辑
 ```
 
-
-
 ## `response` 对象的属性
 
-| 参数名称          | 数据类型 | 说明                                                    |
-| :---------------- | :------- | :------------------------------------------------------ |
-| `content`         | `str`    | 大模型返回的聊天内容，如果是流式输出，则为当前流式内容  |
-| `stop_usage`      | `dict`   | 结束对话时 `prompt` 和 `completion` 的 token 使用量     |
-| `tool_calls_info` | `dict`   | 包含了该次对话中所有的工具调用信息                      |
-| `total_tokens`    | `int`    | 该次对话的总 token 使用量（包括结束对话和所有工具调用） |
+| 参数名称          | 数据类型     | 说明                                                    |
+| :---------------- | :----------- | :------------------------------------------------------ |
+| `content`         | `str`        | 大模型返回的聊天内容，如果是流式输出，则为当前流式内容  |
+| `stop_usage`      | `dict`       | 结束对话时 `prompt` 和 `completion` 的 token 使用量     |
+| `tool_calls_info` | `list[dict]` | 包含了该次对话中所有的工具调用信息                      |
+| `total_tokens`    | `int`        | 该次对话的总 token 使用量（包括结束对话和所有工具调用） |
 
 如果是流式输出，则除了 `content` 之外的其它三个属性要在最后一个 `response` 中才能获取到
