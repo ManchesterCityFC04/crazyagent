@@ -13,28 +13,24 @@
     <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 </a>
 <a href="https://pypi.org/project/crazyagent/" target="_blank">
-    <img src="https://img.shields.io/badge/pypi%20package%20-v1.0.4-green" alt="Package version">
+    <img src="https://img.shields.io/badge/pypi%20package%20-v1.1.0-green" alt="Package version">
 </a>
 <a href="https://pypi.org/project/crazyagent/" target="_blank">
     <img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-%2334D058" alt="Supported Python versions">
-</a>
-<br>
-<a href="https://pypi.org/project/crazyagent/" target="_blank">
-    <img src="https://img.shields.io/badge/%E4%BD%9C%E8%80%85-%E6%B7%B1%E5%9C%B3%E4%BF%A1%E6%81%AF%E8%81%8C%E4%B8%9A%E6%8A%80%E6%9C%AF%E5%A4%A7%E5%AD%A6%20%E4%BA%BA%E5%B7%A5%E6%99%BA%E8%83%BD%E5%AD%A6%E9%99%A2%20%E9%BB%8E%E6%98%8E%E8%BD%A9-8A2BE2" alt="Supported Python versions">
 </a>
 </p>
 
 ## 特性
 
 - **更少的错误**： *CrazyAgent* 采用简洁明了的 API 设计，显著减少开发者编写代码的错误
-- **快速开发**： *CrazyAgent* 提供了一系列工具，帮助开发者快速构建智能体应用，无需过多学习成本
-- **易于使用**： 设计简单易用且易于学习，减少阅读文档的时间
+- **快速开发**： *CrazyAgent* 提供了一系列工具，帮助开发者快速构建智能体应用
+- **易于使用**： *CrazyAgent* 设计简单易用且易于学习，减少阅读文档的时间
 
 ## 兼容的模型服务
 
 - [x] [MoonShot](https://www.kimi.com/)
 - [x] [DeepSeek](https://www.deepseek.com/)
-- [ ] [OpenAI](https://www.openai.com/) *(正在开发)*
+- [ ] [OpenAI](https://www.openai.com/) *(待开发)*
 
 ## 依赖
 
@@ -58,33 +54,62 @@ $ python -m pip install crazyagent
 - [Deepseek 开发者文档](https://platform.deepseek.com/api_keys)
 - [Moonshot 开发者文档](https://platform.moonshot.cn/console/api-keys)
 
+### 同步非流式输出
+
 ```python
 from crazyagent.chat import Deepseek
 
 YOUR_API_KEY = "..."  # 请替换为你的 API 密钥
-
 llm = Deepseek(api_key=YOUR_API_KEY)
 
 response = llm.invoke("你好，我叫小明")
-
 print(response.content)
 ```
 
-<details>
-<summary>流式输出：</summary>
+### 同步流式输出
+
 
 ```Python
 from crazyagent.chat import Deepseek
 
 YOUR_API_KEY = "..."  # 请替换为你的 API 密钥
-
 llm = Deepseek(api_key=YOUR_API_KEY)
 
 for response in llm.stream("你好，我叫小明"):
     print(response.content, end="", flush=True)
 ```
 
-</details>
+### 异步非流式输出
+
+```python
+from crazyagent.chat import Deepseek
+
+YOUR_API_KEY = "..."  # 请替换为你的 API 密钥
+llm = Deepseek(api_key=YOUR_API_KEY)
+
+async def main():
+    response = await llm.ainvoke("你好，我叫小明")
+    print(response.content)
+    
+import asyncio
+asyncio.run(main())
+```
+
+### 异步流式输出
+
+```python
+from crazyagent.chat import Deepseek
+
+YOUR_API_KEY = "..."  # 请替换为你的 API 密钥
+llm = Deepseek(api_key=YOUR_API_KEY)
+
+async def main():
+    async for response in llm.astream("你好，我叫小明"):
+        print(response.content, end="", flush=True)
+
+import asyncio
+asyncio.run(main())
+```
 
 ## 记忆
 
@@ -228,7 +253,8 @@ def get_weather(city_name: str) -> dict:
 ```python
 from crazyagent.toolkit.core import crazy_tool, Argument
 
-@crazy_tool
+# 如果是异步函数(async def xxx()..., 则 is_async=True
+@crazy_tool(is_async=False)
 def get_weather(city_name: str = Argument("城市名称")) -> dict:
     """查询天气"""
     ...  # 假设这里是查询天气的逻辑
@@ -278,8 +304,8 @@ while True:
     user_prompt = input('你 > ')
     print('AI > ', end='', flush=True)
     # 这里把 获取天气 和 发送邮件 两个工具函数传入 tools 参数, 这样在对话中大模型就会知道这些工具的存在, 并根据用户的输入来选择使用哪个工具
-    for rc in llm.stream(user_prompt, memory=memory, tools=[get_weather, send_email]):
-        print(rc.content, end='', flush=True)
+    for response in llm.stream(user_prompt, memory=memory, tools=[get_weather, send_email]):
+        print(response.content, end='', flush=True)
     else:
         print()
         print(memory)

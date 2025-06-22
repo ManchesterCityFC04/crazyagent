@@ -7,8 +7,11 @@ import uuid
 from email.mime.text import MIMEText
 from email.utils import formataddr
 import smtplib
+import aiosmtplib
 
 import requests
+
+# ----------------------------------------------------
 
 _email_config = None
 
@@ -27,7 +30,7 @@ def configure_email_service(sender_mail: str, authorization_code: str, server: s
         'server': server
     }
 
-@crazy_tool
+@crazy_tool(is_async=False)
 def send_email(
     subject: str = Argument(description='Email subject'), 
     sender_name: str = Argument(description='Sender name, e.g., "Crazy Agent".'),
@@ -67,6 +70,49 @@ def send_email(
         server.sendmail(sender_mail, addressee, msg.as_string())
     return f'email is sent to {addressee}'
 
+@crazy_tool(is_async=True)
+async def async_send_email(
+    subject: str = Argument(description='Email subject'), 
+    sender_name: str = Argument(description='Sender name, e.g., "Crazy Agent".'),
+    addressee: str = Argument(description='Recipient email address, e.g., "example@qq.com". If not specified, the email will not be sent.'), 
+    text: str = Argument(description='Email body content')
+) -> str:
+    """
+    Send an email.
+
+    Returns:
+        str: A message indicating whether the email is sent successfully.
+    """
+    if _email_config is None:
+        raise ValueError('Please configure the email service first using configure_email_service function')
+
+    if not is_valid_email(addressee):
+        raise ValueError(f'Email address {addressee} is invalid')
+
+    sender_mail = _email_config['sender_mail']
+    authorization_code = _email_config['authorization_code']
+    server = _email_config['server']
+    
+    # Create email content using MIMEText, specify content type as plain text and encoding as UTF-8
+    msg = MIMEText(text, "plain", "utf-8")
+    # Set email subject
+    msg['Subject'] = subject
+    # Set sender information, including sender name and email address
+    msg["From"] = formataddr((sender_name, sender_mail))
+    # Set recipient email address
+    msg['To'] = addressee
+    
+    # Use aiosmtplib for async email sending
+    smtp = aiosmtplib.SMTP(hostname=server, use_tls=True)
+    await smtp.connect()
+    await smtp.login(sender_mail, authorization_code)
+    await smtp.send_message(msg)
+    await smtp.quit()
+    
+    return f'email is sent to {addressee}'
+
+# ----------------------------------------------------
+
 _save_dir = None
 
 def configure_save_dir(save_dir: str):
@@ -85,7 +131,7 @@ def configure_save_dir(save_dir: str):
         raise ValueError(f"The directory '{save_dir}' does not exist.")
     _save_dir = save_dir
 
-@crazy_tool
+@crazy_tool(is_async=False)
 def fetch_and_save(
     url_file_pairs: list = Argument(description="""\
 A list of URL and filename pairs, where each pair is a list containing two elements: the URL and the filename.
