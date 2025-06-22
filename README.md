@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="#"><img src="docs/logo.png" alt="CrazyAgent" width="100%"></a>
+  <a href="#"><img src="https://tc.z.wiki/autoupload/aO87be6Bm1mpRznB-b2lwnw1PNaULOoRamjqQCm9WCuyl5f0KlZfm6UsKj-HyTuv/20250623/IdrG/4267X1946/logo.png" alt="CrazyAgent" width="100%"></a>
 </p>
 
 <p align="center">
@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 </a>
 <a href="https://pypi.org/project/crazyagent/" target="_blank">
-    <img src="https://img.shields.io/badge/pypi%20package%20-v1.1.0-green" alt="Package version">
+    <img src="https://img.shields.io/badge/pypi%20package%20-v1.1.1-green" alt="Package version">
 </a>
 <a href="https://pypi.org/project/crazyagent/" target="_blank">
     <img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-%2334D058" alt="Supported Python versions">
@@ -58,9 +58,10 @@ $ python -m pip install crazyagent
 
 ```python
 from crazyagent.chat import Deepseek
+import os
 
-YOUR_API_KEY = "..."  # 请替换为你的 API 密钥
-llm = Deepseek(api_key=YOUR_API_KEY)
+# 从环境变量中获取 Deepseek API
+llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
 
 response = llm.invoke("你好，我叫小明")
 print(response.content)
@@ -71,9 +72,9 @@ print(response.content)
 
 ```Python
 from crazyagent.chat import Deepseek
+import os
 
-YOUR_API_KEY = "..."  # 请替换为你的 API 密钥
-llm = Deepseek(api_key=YOUR_API_KEY)
+llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
 
 for response in llm.stream("你好，我叫小明"):
     print(response.content, end="", flush=True)
@@ -83,15 +84,15 @@ for response in llm.stream("你好，我叫小明"):
 
 ```python
 from crazyagent.chat import Deepseek
+import asyncio
+import os
 
-YOUR_API_KEY = "..."  # 请替换为你的 API 密钥
-llm = Deepseek(api_key=YOUR_API_KEY)
+llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
 
 async def main():
     response = await llm.ainvoke("你好，我叫小明")
     print(response.content)
     
-import asyncio
 asyncio.run(main())
 ```
 
@@ -99,15 +100,15 @@ asyncio.run(main())
 
 ```python
 from crazyagent.chat import Deepseek
+import asyncio
+import os
 
-YOUR_API_KEY = "..."  # 请替换为你的 API 密钥
-llm = Deepseek(api_key=YOUR_API_KEY)
+llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
 
 async def main():
     async for response in llm.astream("你好，我叫小明"):
         print(response.content, end="", flush=True)
 
-import asyncio
 asyncio.run(main())
 ```
 
@@ -135,8 +136,9 @@ asyncio.run(main())
 ```python
 from crazyagent.chat import Deepseek
 from crazyagent.memory import Memory
+import os
 
-YOUR_API_KEY = "..."  # 请替换为你的 API 密钥
+llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
 
 llm = Deepseek(api_key=YOUR_API_KEY)
 memory = Memory()  # 创建一个新的记忆对象
@@ -151,7 +153,7 @@ else:
     print(memory)  # 打印记忆中的消息记录
 ```
 
-<img src="docs/1.gif" alt="示例效果">
+<img src="https://tc.z.wiki/autoupload/aO87be6Bm1mpRznB-b2lwnw1PNaULOoRamjqQCm9WCuyl5f0KlZfm6UsKj-HyTuv/20250623/GAwu/1810X620/1.gif" alt="示例效果">
 
 ### 3. 自定义记忆和系统提示词
 
@@ -163,7 +165,7 @@ from crazyagent.memory import Memory, HumanMessage, AIMessage, SystemMessage
 
 memory = Memory()
 memory.system_message = SystemMessage("你是一个疯狂的助手")  # 自定义系统提示词
-# 向记忆中添加消息记录
+# 向记忆中添加消息记录 
 memory.update(
     HumanMessage("你好，我叫小明。"),
     AIMessage("你好呀，小明！我是一个疯狂的助手。"),
@@ -171,17 +173,16 @@ memory.update(
 print(memory)  # 打印记忆中的消息记录
 ```
 
-<img src="docs/1.png" alt="示例效果">
+<img src="https://tc.z.wiki/autoupload/aO87be6Bm1mpRznB-b2lwnw1PNaULOoRamjqQCm9WCuyl5f0KlZfm6UsKj-HyTuv/20250623/dIQg/967X329/1.png" alt="示例效果">
 
 ### 4. 实战案例，添加初始记忆后进行多轮对话
 
 ```python
 from crazyagent.chat import Deepseek
 from crazyagent.memory import Memory, HumanMessage, AIMessage, SystemMessage
+import os
 
-YOUR_API_KEY = "..."  # 请替换为你的 API 密钥
-
-llm = Deepseek(api_key=YOUR_API_KEY)
+llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
 
 memory = Memory()
 memory.system_message = SystemMessage("你是一个疯狂的助手")  # 自定义系统提示词
@@ -200,7 +201,7 @@ while True:
         print()
         print(memory)
 ```
-<img src="docs/2.gif" alt="示例效果">
+<img src="https://tc.z.wiki/autoupload/aO87be6Bm1mpRznB-b2lwnw1PNaULOoRamjqQCm9WCuyl5f0KlZfm6UsKj-HyTuv/20250623/CcBp/2304X796/2.gif" alt="示例效果">
 
 ## 工具
 
@@ -233,7 +234,7 @@ def get_weather(city_name: str) -> dict:
     查询天气
 
     Args:
-        city_name (str): 城市名称
+        city_name: 城市名称
 
     Returns:
         dict: 天气信息
@@ -247,17 +248,33 @@ def get_weather(city_name: str) -> dict:
     }
 ```
 
-现在要把这个函数转化为大模型可以使用的工具函数
+要把这个函数转化为大模型可以使用的工具函数
 只需要把函数用 `@crazy_tool` 装饰器装饰，然后把每个参数的默认值设置为 `Argument` 对象即可
+
+> 异步工具函数只能在 `llm.ainvoke` 和 `llm.astream` 中被使用，它们同时也兼容普通工具函数
+>
+>  `llm.invoke` 和 `llm.stream` 不支持使用异步工具函数
 
 ```python
 from crazyagent.toolkit.core import crazy_tool, Argument
 
-# 如果是异步函数(async def xxx()..., 则 is_async=True
+# 普通工具函数
 @crazy_tool(is_async=False)
 def get_weather(city_name: str = Argument("城市名称")) -> dict:
     """查询天气"""
     ...  # 假设这里是查询天气的逻辑
+    return {
+        "city_name": city_name,
+        "weather": "晴",
+        "temperature": "25°C",
+        "wind": "微风",
+    }
+
+# 异步工具函数
+@crazy_tool(is_async=True)
+async def async_get_weather(city_name: str = Argument("城市名称")) -> dict:
+    """异步查询天气"""
+    ... 
     return {
         "city_name": city_name,
         "weather": "晴",
@@ -311,9 +328,9 @@ while True:
         print(memory)
 ```
 
-<img src="docs/2.png" alt="示例效果">
+<img src="https://tc.z.wiki/autoupload/aO87be6Bm1mpRznB-b2lwnw1PNaULOoRamjqQCm9WCuyl5f0KlZfm6UsKj-HyTuv/20250623/5v8X/2274X1488/2.png" alt="示例效果">
 
-<img src="docs/3.png" alt="收到的邮件" width="50%">
+<img src="https://tc.z.wiki/autoupload/aO87be6Bm1mpRznB-b2lwnw1PNaULOoRamjqQCm9WCuyl5f0KlZfm6UsKj-HyTuv/20250623/gCyz/1179X1186/3.png" alt="收到的邮件" width="50%">
 
 在代码中，我们传入了 `get_weather` 和 `send_email` 两个工具函数到 `llm.stream` 方法的 `tools` 参数中
 然后我们提问：“告诉我妹妹(她的邮箱是2036166178@qq.com)今天广州的天气怎么样”

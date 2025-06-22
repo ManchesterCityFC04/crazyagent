@@ -123,7 +123,7 @@ def crazy_tool(is_async: bool = False) -> callable:
                     r = {'result': await func(**kwargs)}
                 except Exception as e:
                     r = {'error': str(e)}
-                return json.dumps(r, ensure_ascii=False)
+                return json.dumps(r, ensure_ascii=False, separators=(',', ':'), indent=None)
             wrap._is_async = True
         else:
             @wraps(func)

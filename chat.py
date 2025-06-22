@@ -1,16 +1,14 @@
 from .memory import *
 from ._response import Response
 
-import inspect
 from typing import Literal
 from collections import defaultdict
-from abc import abstractmethod, ABC
 import json
 
 from openai import OpenAI
 from openai import AsyncOpenAI
 
-class Chat(ABC):
+class Chat:
 
     def __init__(
         self,
@@ -400,7 +398,7 @@ class Deepseek(Chat):
     ):
         super().__init__(api_key, base_url, model)
         self.name = 'deepseek'
-        
+
 class Moonshot(Chat):
 
     def __init__(
