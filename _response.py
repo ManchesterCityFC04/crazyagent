@@ -15,8 +15,8 @@ class Response:
 
             stop_usage: The usage information of the response.
                 e.g.: {
-                    'prompt_tokens': 100,
-                    'completion_tokens': 100,
+                    'input_tokens': 100,
+                    'output_tokens': 100,
                     'total_tokens': 200,
                 }
 
@@ -27,8 +27,8 @@ class Response:
                         'args': {"city": "北京"},
                         'response': {"temp": "24°C"},
                         'usage': {
-                            'prompt_tokens': 100,
-                            'completion_tokens': 100,
+                            'input_tokens': 100,
+                            'output_tokens': 100,
                             'total_tokens': 200
                         }
                     },

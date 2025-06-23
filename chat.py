@@ -49,6 +49,7 @@ class Chat:
             now_tool_call_id: str = None
 
             for chunk in chat_completion_stream:
+                # print(chunk)
                 choice = chunk.choices[0]  
                 finish_reason: Literal['stop', 'tool_calls', None] = choice.finish_reason
                 content: str | None = choice.delta.content  
@@ -132,8 +133,8 @@ class Chat:
             finish_reason: Literal['stop', 'tool_calls'] = choice.finish_reason
             content: str = choice.message.content
             usage = {
-                'prompt_tokens': chat_completion.usage.prompt_tokens,
-                'completion_tokens': chat_completion.usage.completion_tokens,
+                'input_tokens': chat_completion.usage.prompt_tokens,
+                'output_tokens': chat_completion.usage.completion_tokens,
                 'total_tokens': chat_completion.usage.total_tokens
             }
 
@@ -279,8 +280,8 @@ class Chat:
             finish_reason: Literal['stop', 'tool_calls'] = choice.finish_reason
             content: str = choice.message.content
             usage = {
-                'prompt_tokens': chat_completion.usage.prompt_tokens,
-                'completion_tokens': chat_completion.usage.completion_tokens,
+                'input_tokens': chat_completion.usage.prompt_tokens,
+                'output_tokens': chat_completion.usage.completion_tokens,
                 'total_tokens': chat_completion.usage.total_tokens
             }
 
@@ -366,20 +367,32 @@ class Chat:
     
     def get_stream_usage_when_done(self, chunk) -> dict:
         # The APIs of kimi and deepseek only differ in the stream method: kimi's usage is in choice, while deepseek's usage is in chunk.
-        if self.name == 'deepseek':
-            usage = chunk.usage
-        elif self.name == 'kimi':
-            usage = chunk.choices[0].usage
-        return {k: v for k, v in dict(usage).items() if k in ['prompt_tokens', 'completion_tokens', 'total_tokens']}
+        match self.name:
+            case 'deepseek':
+                usage = chunk.usage
+            case 'kimi':
+                usage = chunk.choices[0].usage
+            case 'ollama':
+                # ollama does not return usage information in the stream response.
+                return {
+                    'input_tokens': 0,
+                    'output_tokens': 0,
+                    'total_tokens': 0
+                }
+        return {k: v for k, v in dict(usage).items() if k in ['input_tokens', 'output_tokens', 'total_tokens']}
 
     def check_temperature(self, temperature: float | None) -> float:
         """Check and validate the temperature setting."""
-        if self.name == 'kimi':
-            temperature_range = (0, 1.0)
-            default_temperature = 0.3
-        elif self.name == 'deepseek':
-            temperature_range = (0, 1.5)
-            default_temperature = 1.0
+        match self.name:
+            case 'deepseek':
+                temperature_range = (0, 1.5)
+                default_temperature = 1.0
+            case 'kimi':
+                temperature_range = (0, 1.0)
+                default_temperature = 0.3
+            case 'ollama':
+                temperature_range = (0, 9999)
+                default_temperature = 0
 
         if temperature is None:
             return default_temperature
@@ -409,3 +422,14 @@ class Moonshot(Chat):
     ):
         super().__init__(api_key, base_url, model)
         self.name = 'kimi'
+
+class Ollama(Chat):
+
+    def __init__(
+        self,
+        model: str,
+        base_url: str = 'http://localhost:11434/v1/',
+        api_key: str = 'ollama'
+    ):
+        super().__init__(api_key, base_url, model)
+        self.name = 'ollama'

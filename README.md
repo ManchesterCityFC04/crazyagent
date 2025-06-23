@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 </a>
 <a href="https://pypi.org/project/crazyagent/" target="_blank">
-    <img src="https://img.shields.io/badge/pypi%20package%20-v1.1.1-green" alt="Package version">
+    <img src="https://img.shields.io/badge/pypi%20package%20-v1.2.0-green" alt="Package version">
 </a>
 <a href="https://pypi.org/project/crazyagent/" target="_blank">
     <img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-%2334D058" alt="Supported Python versions">
@@ -30,7 +30,8 @@
 
 - [x] [MoonShot](https://www.kimi.com/)
 - [x] [DeepSeek](https://www.deepseek.com/)
-- [ ] [OpenAI](https://www.openai.com/) *(待开发)*
+- [x] [Ollama](https://ollama.com/)
+
 
 ## 依赖
 
@@ -54,7 +55,7 @@ $ python -m pip install crazyagent
 - [Deepseek 开发者文档](https://platform.deepseek.com/api_keys)
 - [Moonshot 开发者文档](https://platform.moonshot.cn/console/api-keys)
 
-### 同步非流式输出
+### 同步输出
 
 ```python
 from crazyagent.chat import Deepseek
@@ -80,7 +81,7 @@ for response in llm.stream("你好，我叫小明"):
     print(response.content, end="", flush=True)
 ```
 
-### 异步非流式输出
+### 异步输出
 
 ```python
 from crazyagent.chat import Deepseek
@@ -139,8 +140,6 @@ from crazyagent.memory import Memory
 import os
 
 llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
-
-llm = Deepseek(api_key=YOUR_API_KEY)
 memory = Memory()  # 创建一个新的记忆对象
 
 # 把 memory 作为参数传递给 llm 的 stream 方法
