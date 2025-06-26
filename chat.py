@@ -368,10 +368,10 @@ class Chat:
     def get_stream_usage_when_done(self, chunk) -> dict:
         # The APIs of kimi and deepseek only differ in the stream method: kimi's usage is in choice, while deepseek's usage is in chunk.
         match self.name:
-            case 'deepseek':
-                usage = chunk.usage
+            case 'deepseek' | 'openai':
+                usage = dict(chunk.usage)
             case 'kimi':
-                usage = chunk.choices[0].usage
+                usage: dict = chunk.choices[0].usage
             case 'ollama':
                 # ollama does not return usage information in the stream response.
                 return {
@@ -379,11 +379,18 @@ class Chat:
                     'output_tokens': 0,
                     'total_tokens': 0
                 }
-        return {k: v for k, v in dict(usage).items() if k in ['input_tokens', 'output_tokens', 'total_tokens']}
+        return {
+            'input_tokens': usage['prompt_tokens'],
+            'output_tokens': usage['completion_tokens'],
+            'total_tokens': usage['total_tokens']
+        }
 
     def check_temperature(self, temperature: float | None) -> float:
         """Check and validate the temperature setting."""
         match self.name:
+            case 'openai':
+                temperature_range = (0, 2)
+                default_temperature = 1.0
             case 'deepseek':
                 temperature_range = (0, 1.5)
                 default_temperature = 1.0
@@ -400,6 +407,17 @@ class Chat:
             raise ValueError('temperature must be a float')
         if not (temperature_range[0] <= temperature <= temperature_range[1]):
             raise ValueError(f'temperature must be in range {temperature_range}')
+        
+class CloseAI(Chat):
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str = 'gpt-4o-mini',
+        base_url: str = 'https://api.openai.com/v1'
+    ):
+        super().__init__(api_key, base_url, model)
+        self.name = 'openai'
 
 class Deepseek(Chat):
 

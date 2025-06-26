@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 </a>
 <a href="https://pypi.org/project/crazyagent/" target="_blank">
-    <img src="https://img.shields.io/badge/pypi%20package%20-v1.2.0-green" alt="Package version">
+    <img src="https://img.shields.io/badge/pypi%20package%20-v1.3.0-green" alt="Package version">
 </a>
 <a href="https://pypi.org/project/crazyagent/" target="_blank">
     <img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-%2334D058" alt="Supported Python versions">
@@ -28,6 +28,7 @@
 
 ## 兼容的模型服务
 
+- [x] [OpenAI](https://openai.com/)
 - [x] [MoonShot](https://www.kimi.com/)
 - [x] [DeepSeek](https://www.deepseek.com/)
 - [x] [Ollama](https://ollama.com/)
