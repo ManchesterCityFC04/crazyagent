@@ -103,3 +103,100 @@ async def async_search_image(query: str = Argument('Search keyword'), page: int 
         data = response.json()
         url_list = [i['photo']['path'] for i in data['data']['object_list']]
         return url_list
+
+# ----------------------------------------------------
+
+@crazy_tool(is_async=False)
+def search_baidu(query: str = Argument('Search query to look up on Baidu'), page: int = Argument('Page number', default=1)) -> list[dict]:
+    """
+    Search Baidu for the given query and return search results.
+    
+    Returns:
+        List of dictionaries containing title, snippet, and URL for each search result.
+    """
+    url = 'https://www.baidu.com/s'
+    params = {
+        'wd': query,
+        'pn': (page - 1) * 10,  # Baidu uses 0-based page indexing with 10 results per page
+        'rn': 10  # Number of results to return
+    }
+    
+    response = requests.get(url=url, params=params, headers=HEADERS)
+    response.encoding = 'utf-8'
+    
+    # Basic parsing of Baidu search results
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(response.text, 'html.parser')
+    results = []
+    
+    # Extract search result containers
+    for item in soup.select('.result'):
+        try:
+            title_element = item.select_one('.t')
+            if not title_element:
+                continue
+                
+            title = title_element.get_text().strip()
+            link = title_element.select_one('a')['href']
+            
+            # Get snippet
+            content = item.select_one('.c-abstract')
+            snippet = content.get_text().strip() if content else "No description available"
+            
+            results.append({
+                'title': title,
+                'snippet': snippet,
+                'url': link
+            })
+        except Exception as e:
+            continue
+    
+    return results
+
+@crazy_tool(is_async=True)
+async def async_search_baidu(query: str = Argument('Search query to look up on Baidu'), page: int = Argument('Page number', default=1)) -> list[dict]:
+    """
+    Search Baidu for the given query and return search results.
+    
+    Returns:
+        List of dictionaries containing title, snippet, and URL for each search result.
+    """
+    url = 'https://www.baidu.com/s'
+    params = {
+        'wd': query,
+        'pn': (page - 1) * 10,  # Baidu uses 0-based page indexing with 10 results per page
+        'rn': 10  # Number of results to return
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url=url, params=params, headers=HEADERS)
+        response.encoding = 'utf-8'
+        
+        # Basic parsing of Baidu search results
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(response.text, 'html.parser')
+        results = []
+        
+        # Extract search result containers
+        for item in soup.select('.result'):
+            try:
+                title_element = item.select_one('.t')
+                if not title_element:
+                    continue
+                    
+                title = title_element.get_text().strip()
+                link = title_element.select_one('a')['href']
+                
+                # Get snippet
+                content = item.select_one('.c-abstract')
+                snippet = content.get_text().strip() if content else "No description available"
+                
+                results.append({
+                    'title': title,
+                    'snippet': snippet,
+                    'url': link
+                })
+            except Exception as e:
+                continue
+        
+        return results
