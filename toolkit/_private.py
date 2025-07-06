@@ -30,7 +30,7 @@ def configure_email_service(sender_mail: str, authorization_code: str, server: s
         'server': server
     }
 
-@crazy_tool(is_async=False)
+@crazy_tool
 def send_email(
     subject: str = Argument(description='Email subject'), 
     sender_name: str = Argument(description='Sender name, e.g., "Crazy Agent".'),
@@ -70,7 +70,7 @@ def send_email(
         server.sendmail(sender_mail, addressee, msg.as_string())
     return f'email is sent to {addressee}'
 
-@crazy_tool(is_async=True)
+@crazy_tool
 async def async_send_email(
     subject: str = Argument(description='Email subject'), 
     sender_name: str = Argument(description='Sender name, e.g., "Crazy Agent".'),
@@ -131,7 +131,7 @@ def configure_save_dir(save_dir: str):
         raise ValueError(f"The directory '{save_dir}' does not exist.")
     _save_dir = save_dir
 
-@crazy_tool(is_async=False)
+@crazy_tool
 def fetch_and_save(
     url_file_pairs: list = Argument(description="""\
 A list of URL and filename pairs, where each pair is a list containing two elements: the URL and the filename.

@@ -6,14 +6,14 @@
     <em>极简高效、易于集成、灵活扩展、上下文管理强大、适合新手的 LLM 智能体开发框架</em>
 </p>
 
-*CrazyAgent* 是专为智能体开发新手打造的框架，语法简洁明了，便于将大模型与各类工具和组件高效集成，并能灵活管理上下文记忆，大幅提升开发效率。即使是刚接触 Python 的用户也能快速上手
+*CrazyAgent* 是专为智能体开发新手打造的框架，语法简洁明了，便于将大模型与各类工具和组件高效集成，并能灵活管理上下文记忆，大幅提升开发效率。即使是刚接触 Python 的用户也能快速上手。
 
 <p align="center">
 <a href="https://opensource.org/licenses/MIT" target="_blank">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
 </a>
 <a href="https://pypi.org/project/crazyagent/" target="_blank">
-    <img src="https://img.shields.io/badge/pypi%20package%20-v1.3.0-green" alt="Package version">
+    <img src="https://img.shields.io/badge/pypi%20package%20-v1.4.0-green" alt="Package version">
 </a>
 <a href="https://pypi.org/project/crazyagent/" target="_blank">
     <img src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-%2334D058" alt="Supported Python versions">
@@ -62,7 +62,7 @@ $ python -m pip install crazyagent
 from crazyagent.chat import Deepseek
 import os
 
-# 从环境变量中获取 Deepseek API
+# 从环境变量中获取 Deepseek 的 API 密钥
 llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
 
 response = llm.invoke("你好，我叫小明")
@@ -86,7 +86,6 @@ for response in llm.stream("你好，我叫小明"):
 
 ```python
 from crazyagent.chat import Deepseek
-import asyncio
 import os
 
 llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
@@ -94,7 +93,8 @@ llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
 async def main():
     response = await llm.ainvoke("你好，我叫小明")
     print(response.content)
-    
+
+import asyncio
 asyncio.run(main())
 ```
 
@@ -102,7 +102,6 @@ asyncio.run(main())
 
 ```python
 from crazyagent.chat import Deepseek
-import asyncio
 import os
 
 llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
@@ -111,6 +110,7 @@ async def main():
     async for response in llm.astream("你好，我叫小明"):
         print(response.content, end="", flush=True)
 
+import asyncio
 asyncio.run(main())
 ```
 
@@ -193,7 +193,7 @@ memory.update(
 )
 
 while True:
-    user_input = input("你 > ")  # 等待用户输入
+    user_input = input("> ")  # 等待用户输入
     for response in llm.stream(user_input, memory=memory):
         print(response.content, end="", flush=True)
     else:
@@ -207,8 +207,8 @@ while True:
 
 ### CrazyAgent 提供了整个地球上最精简、高效、迅速和稳定的工具构建框架！
 
-***工具函数的每个参数必须要使用类型注解！而且函数的文档字符串最好要完整！***
-***工具函数的类型注解和 `Argument` 的构造函数的参数的类型必须都属于 `JSONType`!***
+***工具函数的每个参数必须要使用类型注解！而且函数的文档字符串要完整！***
+***与工具函数相关的所有参数类型都必须属于 `JSONType`!***
 
 ```python
 from types import UnionType, NoneType
@@ -251,15 +251,15 @@ def get_weather(city_name: str) -> dict:
 要把这个函数转化为大模型可以使用的工具函数
 只需要把函数用 `@crazy_tool` 装饰器装饰，然后把每个参数的默认值设置为 `Argument` 对象即可
 
-> 异步工具函数只能在 `llm.ainvoke` 和 `llm.astream` 中被使用，它们同时也兼容普通工具函数
+> 异步工具函数只能在 `llm.ainvoke` 和 `llm.astream` 中被使用，它们同时也兼容同步工具函数
 >
->  `llm.invoke` 和 `llm.stream` 不支持使用异步工具函数
+>  但 `llm.invoke` 和 `llm.stream` 不支持使用异步工具函数
 
 ```python
 from crazyagent.toolkit.core import crazy_tool, Argument
 
 # 普通工具函数
-@crazy_tool(is_async=False)
+@crazy_tool
 def get_weather(city_name: str = Argument("城市名称")) -> dict:
     """查询天气"""
     ...  # 假设这里是查询天气的逻辑
@@ -271,10 +271,10 @@ def get_weather(city_name: str = Argument("城市名称")) -> dict:
     }
 
 # 异步工具函数
-@crazy_tool(is_async=True)
+@crazy_tool
 async def async_get_weather(city_name: str = Argument("城市名称")) -> dict:
-    """异步查询天气"""
-    ... 
+    """查询天气"""
+    ...  # 假设这里是查询天气的逻辑
     return {
         "city_name": city_name,
         "weather": "晴",
@@ -303,8 +303,7 @@ from crazyagent.toolkit import (
 )
 from crazyagent.memory import Memory
 from crazyagent.chat import Deepseek
-
-YOUR_API_KEY = '...'  # 请替换为你的 API 密钥
+import os
 
 # 为私有工具函数 send_email 配置邮件服务的 API 密钥信息
 configure_email_service(
@@ -313,15 +312,17 @@ configure_email_service(
     server='...'  # 替换为实际的 SMTP 服务器地址
 )
 
-llm = Deepseek(api_key=DEEPSEEK_API_KEY)
+llm = Deepseek(api_key=os.environ.get('DEEPSEEK_API_KEY'))
 memory = Memory()
 
 while True:
-    print()
-    user_prompt = input('你 > ')
-    print('AI > ', end='', flush=True)
+    user_prompt = input('> ')
     # 这里把 获取天气 和 发送邮件 两个工具函数传入 tools 参数, 这样在对话中大模型就会知道这些工具的存在, 并根据用户的输入来选择使用哪个工具
-    for response in llm.stream(user_prompt, memory=memory, tools=[get_weather, send_email]):
+    for response in llm.stream(
+        user_prompt,
+        memory=memory, 
+        tools=[get_weather, send_email]
+    ):
         print(response.content, end='', flush=True)
     else:
         print()

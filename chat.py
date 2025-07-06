@@ -5,8 +5,7 @@ from typing import Literal
 from collections import defaultdict
 import json
 
-from openai import OpenAI
-from openai import AsyncOpenAI
+from openai import OpenAI, AsyncOpenAI
 
 class Chat:
 
@@ -74,7 +73,10 @@ class Chat:
                             tool_name=tool_name,
                             tool_args=tool_args_dict
                         )
-                        memory.update(AICallToolMessage(tool_call_id, tool_name, tool_args), ToolMessage(tool_response, tool_call_id))
+                        memory.update(
+                            AICallToolMessage(tool_call_id, tool_name, tool_args), 
+                            ToolMessage(tool_response, tool_call_id)
+                        )
                         resp.add_tool_call_info(
                             name=tool_name, 
                             args=tool_args, 
@@ -398,8 +400,8 @@ class Chat:
                 temperature_range = (0, 1.0)
                 default_temperature = 0.3
             case 'ollama':
-                temperature_range = (0, 9999)
-                default_temperature = 0
+                if temperature is None:
+                    return 0.0
 
         if temperature is None:
             return default_temperature

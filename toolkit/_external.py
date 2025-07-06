@@ -8,7 +8,7 @@ import httpx
 
 # ----------------------------------------------------
 
-@crazy_tool(is_async=False)
+@crazy_tool
 def get_weather(city_name: str = Argument('City name, e.g., "广州". If city name is not specified, refuse to provide weather information.')) -> dict | str:
     """
     Get weather information for a given city.
@@ -35,7 +35,7 @@ def get_weather(city_name: str = Argument('City name, e.g., "广州". If city na
     data = session.get(url=url).json()
     return data
 
-@crazy_tool(is_async=True)
+@crazy_tool
 async def async_get_weather(city_name: str = Argument('City name, e.g., "广州". If city name is not specified, refuse to provide weather information.')) -> dict | str:
     """
     Get weather information for a given city.
@@ -59,7 +59,7 @@ async def async_get_weather(city_name: str = Argument('City name, e.g., "广州"
 
 # ----------------------------------------------------
 
-@crazy_tool(is_async=False)
+@crazy_tool
 def search_image(query: str = Argument('Search keyword'), page: int = Argument('Page number', default=1)) -> list[str]:
     """
     Search for images based on the provided query.    
@@ -82,7 +82,7 @@ def search_image(query: str = Argument('Search keyword'), page: int = Argument('
         url_list.append(url)
     return url_list
 
-@crazy_tool(is_async=True)
+@crazy_tool
 async def async_search_image(query: str = Argument('Search keyword'), page: int = Argument('Page number', default=1)) -> list[str]:
     """
     Search for images based on the provided query.
