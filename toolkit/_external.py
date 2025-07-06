@@ -117,19 +117,17 @@ def search_baidu(query: str = Argument('Search query to look up on Baidu'), page
     url = 'https://www.baidu.com/s'
     params = {
         'wd': query,
-        'pn': (page - 1) * 10,  # Baidu uses 0-based page indexing with 10 results per page
-        'rn': 10  # Number of results to return
+        'pn': (page - 1) * 10,  
+        'rn': 10  
     }
     
     response = requests.get(url=url, params=params, headers=HEADERS)
     response.encoding = 'utf-8'
     
-    # Basic parsing of Baidu search results
     from bs4 import BeautifulSoup
     soup = BeautifulSoup(response.text, 'html.parser')
     results = []
     
-    # Extract search result containers
     for item in soup.select('.result'):
         try:
             title_element = item.select_one('.t')
@@ -139,7 +137,6 @@ def search_baidu(query: str = Argument('Search query to look up on Baidu'), page
             title = title_element.get_text().strip()
             link = title_element.select_one('a')['href']
             
-            # Get snippet
             content = item.select_one('.c-abstract')
             snippet = content.get_text().strip() if content else "No description available"
             
@@ -164,20 +161,18 @@ async def async_search_baidu(query: str = Argument('Search query to look up on B
     url = 'https://www.baidu.com/s'
     params = {
         'wd': query,
-        'pn': (page - 1) * 10,  # Baidu uses 0-based page indexing with 10 results per page
-        'rn': 10  # Number of results to return
+        'pn': (page - 1) * 10,  
+        'rn': 10  
     }
     
     async with httpx.AsyncClient() as client:
         response = await client.get(url=url, params=params, headers=HEADERS)
         response.encoding = 'utf-8'
         
-        # Basic parsing of Baidu search results
         from bs4 import BeautifulSoup
         soup = BeautifulSoup(response.text, 'html.parser')
         results = []
         
-        # Extract search result containers
         for item in soup.select('.result'):
             try:
                 title_element = item.select_one('.t')
@@ -187,7 +182,6 @@ async def async_search_baidu(query: str = Argument('Search query to look up on B
                 title = title_element.get_text().strip()
                 link = title_element.select_one('a')['href']
                 
-                # Get snippet
                 content = item.select_one('.c-abstract')
                 snippet = content.get_text().strip() if content else "No description available"
                 
