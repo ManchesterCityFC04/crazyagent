@@ -5,8 +5,7 @@ from typing import Literal
 from collections import defaultdict
 import json
 
-from openai import OpenAI
-from openai import AsyncOpenAI
+from openai import OpenAI, AsyncOpenAI
 
 class Chat:
 
@@ -44,8 +43,7 @@ class Chat:
                 stream=True,
                 temperature=temperature
             )
-
-            tools_to_call = defaultdict(dict)
+            tools_to_call = defaultdict(lambda: {"tool_name": "", "tool_args": ""})
             now_tool_call_id: str = None
 
             for chunk in chat_completion_stream:
@@ -68,13 +66,16 @@ class Chat:
                         tool_name: str = v['tool_name']
                         tool_args: str = v['tool_args']
                         tool_args_dict: dict = json.loads(v['tool_args'])
-
+                        
                         tool_response: str = self.get_tool_response(
                             tool_map=tool_map,
                             tool_name=tool_name,
                             tool_args=tool_args_dict
                         )
-                        memory.update(AICallToolMessage(tool_call_id, tool_name, tool_args), ToolMessage(tool_response, tool_call_id))
+                        memory.update(
+                            AICallToolMessage(tool_call_id, tool_name, tool_args), 
+                            ToolMessage(tool_response, tool_call_id)
+                        )
                         resp.add_tool_call_info(
                             name=tool_name, 
                             args=tool_args, 
@@ -93,13 +94,15 @@ class Chat:
                     func_name = tool_call.function.name
                     # func_args is an empty string the first time, and a non-empty string in subsequent occurrences
                     func_args = tool_call.function.arguments
-                    if tool_call.id not in tools_to_call and tool_call.id is not None:
+                    if tool_call.id and tool_call.id not in tools_to_call:
                         now_tool_call_id = tool_call.id
                         tools_to_call[now_tool_call_id]['tool_name'] = func_name
 
                     if not tools_to_call[now_tool_call_id].get('tool_args'):
                         tools_to_call[now_tool_call_id]['tool_args'] = ''
-                    tools_to_call[now_tool_call_id]['tool_args'] += func_args
+                    # Handle the case when func_args is None
+                    if func_args is not None:
+                        tools_to_call[now_tool_call_id]['tool_args'] += func_args
                     continue
                 # Handle content in non-termination cases
                 if content is None: continue
@@ -193,7 +196,7 @@ class Chat:
                 temperature=temperature
             )
 
-            tools_to_call = defaultdict(dict)
+            tools_to_call = defaultdict(lambda: {"tool_name": "", "tool_args": ""})
             now_tool_call_id: str = None
 
             async for chunk in chat_completion_stream:
@@ -240,13 +243,15 @@ class Chat:
                     func_name = tool_call.function.name
                     # func_args is an empty string the first time, and a non-empty string in subsequent occurrences
                     func_args = tool_call.function.arguments
-                    if tool_call.id not in tools_to_call and tool_call.id is not None:
+                    if tool_call.id and tool_call.id not in tools_to_call:
                         now_tool_call_id = tool_call.id
                         tools_to_call[now_tool_call_id]['tool_name'] = func_name
 
                     if not tools_to_call[now_tool_call_id].get('tool_args'):
                         tools_to_call[now_tool_call_id]['tool_args'] = ''
-                    tools_to_call[now_tool_call_id]['tool_args'] += func_args
+                    # Handle the case when func_args is None
+                    if func_args is not None:
+                        tools_to_call[now_tool_call_id]['tool_args'] += func_args
                     continue
                 # Handle content in non-termination cases
                 if content is None: continue
@@ -372,7 +377,7 @@ class Chat:
                 usage = dict(chunk.usage)
             case 'kimi':
                 usage: dict = chunk.choices[0].usage
-            case 'ollama':
+            case 'ollama'|'qwen':
                 # ollama does not return usage information in the stream response.
                 return {
                     'input_tokens': 0,
@@ -398,8 +403,11 @@ class Chat:
                 temperature_range = (0, 1.0)
                 default_temperature = 0.3
             case 'ollama':
-                temperature_range = (0, 9999)
-                default_temperature = 0
+                if temperature is None:
+                    return 0.0
+            case 'qwen':
+                temperature_range = (0, 2)
+                default_temperature = 1.0
 
         if temperature is None:
             return default_temperature
@@ -451,3 +459,14 @@ class Ollama(Chat):
     ):
         super().__init__(api_key, base_url, model)
         self.name = 'ollama'
+
+class Qwen(Chat):
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        base_url: str = 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    ):
+        super().__init__(api_key, base_url, model)
+        self.name = 'qwen'
