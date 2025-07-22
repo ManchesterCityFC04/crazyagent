@@ -163,7 +163,7 @@ class Memory:
                 content = CS.green(m.content)
 
             r.append([role, content])
-        return tabulate(r, headers='firstrow', tablefmt='grid', maxcolwidths=[None, MAXCOLWIDTH],disable_numparse=True)
+        return tabulate(r, headers='firstrow', tablefmt='grid', maxcolwidths=[None, MAXCOLWIDTH])
 
 __all__ = [
     'Memory',
